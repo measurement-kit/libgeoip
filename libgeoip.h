@@ -174,9 +174,9 @@ void mk_geoip_settings_delete(mk_geoip_settings_t *p) {
 
 struct mk_geoip_results {
   mk_geoip_error_t error = MK_GEOIP_ENONE;
-  std::string probe_ip = "";
-  std::string probe_asn = "";
-  std::string probe_cc = "";
+  std::string probe_ip;
+  std::string probe_asn;
+  std::string probe_cc;
   std::string probe_network_name;
   std::string logs;
   double bytes_recv = 0.0;
