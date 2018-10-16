@@ -59,8 +59,7 @@ void mk_geoip_settings_set_asn_db_path(mk_geoip_settings_t *p,
                                        const char *v);
 
 // mk_geoip_settings_set_ca_path sets path to CA bundle path.
-void mk_geoip_settings_set_ca_path(mk_geoip_settings_t *p,
-                                          const char *ca);
+void mk_geoip_settings_set_ca_path(mk_geoip_settings_t *p, const char *ca);
 
 // mk_geoip_settings_delete deletes a settings instance.
 void mk_geoip_settings_delete(mk_geoip_settings_t *p);
@@ -135,8 +134,9 @@ using mk_geoip_results_uptr = std::unique_ptr<mk_geoip_results_t>;
 #include <functional>
 #include <string>
 
-#include <libcurlx/libcurlx.h>
 #include <maxminddb.h>
+
+#include "libcurlx.h"
 
 struct mk_geoip_settings {
   unsigned timeout = 7;
@@ -149,7 +149,7 @@ mk_geoip_settings_t *mk_geoip_settings_new() {
   return new mk_geoip_settings;
 }
 
-void mk_geoip_settings_set_timeout(mk_geoip_settings_t *p, int v) {
+void mk_geoip_settings_set_timeout(mk_geoip_settings_t *p, unsigned v) {
   if (p != nullptr) p->timeout = v;
 }
 
@@ -286,7 +286,7 @@ static bool parse_ip(const std::string &s, mk_geoip_results_uptr &r) {
   input = input.substr(0, pos);
   for (auto ch : input) {
     if (isspace(ch)) continue;
-    ch = tolower(ch);
+    ch = (char)tolower(ch);
     auto ok = isdigit(ch) || (ch >= 'a' && ch <= 'f') || ch == '.' || ch == ':';
     if (!ok) return false;
     r->probe_ip += ch;
