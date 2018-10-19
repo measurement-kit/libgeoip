@@ -8,6 +8,19 @@ extern "C" {
 // Libmmdbx discovers the probe IP, country code (CC), autonomous system
 // numer (ASN), and network name (i.e. the ASN description).
 //
+// This is the typical workflow of integrating libmmdbx into a project:
+//
+// 1. download the latest measurement-kit/libcurlx into the current directory
+//
+// 2. download libmmdbx.h
+//
+// 3. make sure you include libcurlx.h first
+//
+// 4. then include libmmdbx.h
+//
+// 5. depending on your needs also define MK_CURLX_INLINE_IMPL before
+//    including libcurlx.h and MK_MMDBX_INLINE_IMPL before including libmmdbx.h
+//
 // This is the typical workflow of using libmmdbx:
 //
 // 1. create a mk_mmdbx_settings_t instance
@@ -135,8 +148,6 @@ using mk_mmdbx_results_uptr = std::unique_ptr<mk_mmdbx_results_t>;
 #include <string>
 
 #include <maxminddb.h>
-
-#include "libcurlx.h"
 
 struct mk_mmdbx_settings {
   int timeout = 30  /* seconds */;
