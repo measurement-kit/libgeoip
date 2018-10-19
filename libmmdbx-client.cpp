@@ -3,6 +3,8 @@
 #include <iostream>
 
 #define MK_CURLX_INLINE_IMPL
+#include "libcurlx.h"
+
 #define MK_MMDBX_INLINE_IMPL
 #include "libmmdbx.h"
 
