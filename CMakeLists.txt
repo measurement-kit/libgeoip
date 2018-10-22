@@ -9,7 +9,7 @@ include(MkUtils)
 
 MkDownloadAdishavitArgh()
 MkDownloadCatchorgCatch2()
-MkDownloadMeasurementKitLibcurlx()
+MkDownloadMeasurementKitMkCurl()
 MkDownloadGeoIP()
 
 if("${MSVC}")

@@ -15,7 +15,7 @@
 /INSTALL.vcxproj
 /INSTALL.vcxproj.filters
 /install_manifest.txt
-/libcurlx.h
+/mkcurl.h
 /mkgeoip.sln
 /mkgeoip-client
 /mkgeoip-client.dir/

@@ -2,8 +2,8 @@
 
 #include <iostream>
 
-#define MK_CURLX_INLINE_IMPL
-#include "libcurlx.h"
+#define MKCURL_INLINE_IMPL
+#include "mkcurl.h"
 
 #define MKGEOIP_INLINE_IMPL
 #include "mkgeoip.h"

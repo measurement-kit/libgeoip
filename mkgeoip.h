@@ -71,8 +71,8 @@ void mkgeoip_settings_set_country_db_path(mkgeoip_settings_t *p,
 void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p,
                                        const char *v);
 
-// mkgeoip_settings_set_ca_path sets path to CA bundle path.
-void mkgeoip_settings_set_ca_path(mkgeoip_settings_t *p, const char *ca);
+// mkgeoip_settings_set_ca_bundle_path sets path to CA bundle path.
+void mkgeoip_settings_set_ca_bundle_path(mkgeoip_settings_t *p, const char *ca);
 
 // mkgeoip_settings_delete deletes a settings instance.
 void mkgeoip_settings_delete(mkgeoip_settings_t *p);
@@ -174,8 +174,8 @@ void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p,
   if (p != nullptr && v != nullptr) p->asn_db_path = v;
 }
 
-void mkgeoip_settings_set_ca_path(mkgeoip_settings_t *p,
-                                          const char *v) {
+void mkgeoip_settings_set_ca_bundle_path(mkgeoip_settings_t *p,
+                                         const char *v) {
   if (p != nullptr && v != nullptr) p->ca_path = v;
 }
 
@@ -247,34 +247,34 @@ mkgeoip_results_t *mkgeoip_lookup(const mkgeoip_settings_t *p) {
 static bool parse_ip(const std::string &s, mkgeoip_results_uptr &r);
 
 static bool lookup_ip(const mkgeoip_settings_t *p, mkgeoip_results_uptr &r) {
-  mk_curlx_request_uptr req{mk_curlx_request_new()};
+  mkcurl_request_uptr req{mkcurl_request_new()};
   if (!req) {
     r->error = MKGEOIP_ENOMEM;
     return false;
   }
-  mk_curlx_request_enable_http2(req.get());
-  mk_curlx_request_set_url(req.get(), "https://geoip.ubuntu.com/lookup");
-  mk_curlx_request_set_timeout(req.get(), p->timeout);
+  mkcurl_request_enable_http2(req.get());
+  mkcurl_request_set_url(req.get(), "https://geoip.ubuntu.com/lookup");
+  mkcurl_request_set_timeout(req.get(), p->timeout);
   if (!p->ca_path.empty()) {
-    mk_curlx_request_set_ca_path(req.get(), p->ca_path.c_str());
+    mkcurl_request_set_ca_bundle_path(req.get(), p->ca_path.c_str());
   }
-  mk_curlx_response_uptr res{mk_curlx_perform(req.get())};
+  mkcurl_response_uptr res{mkcurl_perform(req.get())};
   if (!res) {
     r->error = MKGEOIP_ENOMEM;
     return false;
   }
-  r->bytes_sent += mk_curlx_response_get_bytes_sent(res.get());
-  r->bytes_recv += mk_curlx_response_get_bytes_recv(res.get());
-  r->logs += mk_curlx_response_get_logs(res.get());
-  if (mk_curlx_response_get_error(res.get()) != 0) {
+  r->bytes_sent += mkcurl_response_get_bytes_sent(res.get());
+  r->bytes_recv += mkcurl_response_get_bytes_recv(res.get());
+  r->logs += mkcurl_response_get_logs(res.get());
+  if (mkcurl_response_get_error(res.get()) != 0) {
     r->error = MKGEOIP_ECURL;
     return false;
   }
-  if (mk_curlx_response_get_status_code(res.get()) != 200) {
+  if (mkcurl_response_get_status_code(res.get()) != 200) {
     r->error = MKGEOIP_EHTTP;
     return false;
   }
-  std::string body = mk_curlx_response_get_body(res.get());
+  std::string body = mkcurl_response_get_body(res.get());
   if (!parse_ip(body, r)) {
     r->logs += "Failed to parse IP\n";
     return false;
