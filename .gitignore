@@ -16,11 +16,11 @@
 /INSTALL.vcxproj.filters
 /install_manifest.txt
 /libcurlx.h
-/libmmdbx.sln
-/libmmdbx-client
-/libmmdbx-client.dir/
-/libmmdbx-client.vcxproj
-/libmmdbx-client.vcxproj.filters
+/mkgeoip.sln
+/mkgeoip-client
+/mkgeoip-client.dir/
+/mkgeoip-client.vcxproj
+/mkgeoip-client.vcxproj.filters
 /Makefile
 /MK_DIST/
 /Release/
