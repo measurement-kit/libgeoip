@@ -145,6 +145,8 @@ using mkgeoip_results_uptr = std::unique_ptr<mkgeoip_results_t,
 
 #include <maxminddb.h>
 
+#include "mkcurl.h"
+
 struct mkgeoip_settings {
   int64_t timeout = 30  /* seconds */;
   std::string country_db_path;

@@ -3,8 +3,6 @@
 #include <iostream>
 
 #define MKCURL_INLINE_IMPL
-#include "mkcurl.h"
-
 #define MKGEOIP_INLINE_IMPL
 #include "mkgeoip.h"
 
