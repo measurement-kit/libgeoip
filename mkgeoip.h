@@ -120,7 +120,7 @@ struct mkgeoip_settings_deleter {
 /// mkgeoip_settings_uptr is syntactic sugar for using a settings object with
 /// RAII semantic when using this code from C++.
 using mkgeoip_settings_uptr = std::unique_ptr<mkgeoip_settings_t,
-                                               mkgeoip_settings_deleter>;
+                                              mkgeoip_settings_deleter>;
 
 /// mkgeoip_results_deleter is a custom deleter for mkgeoip_results_t.
 struct mkgeoip_results_deleter {
@@ -129,7 +129,8 @@ struct mkgeoip_results_deleter {
 
 /// mkgeoip_results_uptr is syntactic sugar for using a results object with
 /// RAII semantic when using this code from C++.
-using mkgeoip_results_uptr = std::unique_ptr<mkgeoip_results_t>;
+using mkgeoip_results_uptr = std::unique_ptr<mkgeoip_results_t,
+                                             mkgeoip_results_deleter>;
 
 // By default the implementation is not included. You can force it being
 // included by providing the following definition to the compiler.
