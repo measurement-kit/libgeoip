@@ -1,24 +1,24 @@
 #ifndef MEASUREMENT_KIT_MKGEOIP_MKGEOIP_H
 #define MEASUREMENT_KIT_MKGEOIP_MKGEOIP_H
+
 #ifdef __cplusplus
-#include <memory>  // for std::unique_ptr<T>
 extern "C" {
 #endif
 
-// mkgeoip discovers the probe IP, country code (CC), autonomous system
+// Mkgeoip discovers the probe IP, country code (CC), autonomous system
 // numer (ASN), and network name (i.e. the ASN description).
 //
 // This is the typical workflow of integrating mkgeoip into a project:
 //
-// 1. download the latest measurement-kit/libcurlx into the current directory
+// 1. download the latest measurement-kit/mkcurl into the current directory
 //
 // 2. download mkgeoip.h
 //
-// 3. make sure you include libcurlx.h first
+// 3. make sure you include mkcurl.h first
 //
 // 4. then include mkgeoip.h
 //
-// 5. depending on your needs also define MK_CURLX_INLINE_IMPL before
+// 5. depending on your needs also define MKCURL_INLINE_IMPL before
 //    including libcurlx.h and MKGEOIP_INLINE_IMPL before including mkgeoip.h
 //
 // This is the typical workflow of using mkgeoip:
@@ -37,7 +37,7 @@ extern "C" {
 //
 // 6. destroy the results instance
 
-// mkgeoip_error enumerates all possible error conditions.
+/// mkgeoip_error enumerates all possible error conditions.
 typedef enum mkgeoip_error {
   MKGEOIP_ENONE,
   MKGEOIP_EFAULT,
@@ -52,53 +52,53 @@ typedef enum mkgeoip_error {
   MKGEOIP_EMMDBOPEN,
 } mkgeoip_error_t;
 
-// mkgeoip_settings_t contains the settings.
+/// mkgeoip_settings_t contains the settings.
 typedef struct mkgeoip_settings mkgeoip_settings_t;
 
-// mkgeoip_settings_new creates a new settings instance.
+/// mkgeoip_settings_new creates a new settings instance.
 mkgeoip_settings_t *mkgeoip_settings_new(void);
 
-// mkgeoip_settings_set_timeout changes the default timeout for I/O.
+/// mkgeoip_settings_set_timeout changes the default timeout for I/O.
 void mkgeoip_settings_set_timeout(mkgeoip_settings_t *p, int v);
 
-// mkgeoip_settings_set_country_db_path sets the path to the county
-// database. We currently use libmaxminddb as a backend.
+/// mkgeoip_settings_set_country_db_path sets the path to the county
+/// database. We currently use libmaxminddb as a backend.
 void mkgeoip_settings_set_country_db_path(mkgeoip_settings_t *p,
-                                           const char *v);
+                                          const char *v);
 
-// mkgeoip_settings_set_asn_db_path sets the path to the ASN
-// database. We currently use libmaxminddb as a backend.
+/// mkgeoip_settings_set_asn_db_path sets the path to the ASN
+/// database. We currently use libmaxminddb as a backend.
 void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p,
-                                       const char *v);
+                                      const char *v);
 
-// mkgeoip_settings_set_ca_bundle_path sets path to CA bundle path.
+/// mkgeoip_settings_set_ca_bundle_path sets path to CA bundle path.
 void mkgeoip_settings_set_ca_bundle_path(mkgeoip_settings_t *p, const char *ca);
 
-// mkgeoip_settings_delete deletes a settings instance.
+/// mkgeoip_settings_delete deletes a settings instance.
 void mkgeoip_settings_delete(mkgeoip_settings_t *p);
 
-// mkgeoip_results_t contains the results.
+/// mkgeoip_results_t contains the results.
 typedef struct mkgeoip_results mkgeoip_results_t;
 
-// mkgeoip_results_get_error returs the error that occurred.
+/// mkgeoip_results_get_error returs the error that occurred.
 mkgeoip_error_t mkgeoip_results_get_error(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_probe_ip returns the probe IP.
+/// mkgeoip_results_get_probe_ip returns the probe IP.
 const char *mkgeoip_results_get_probe_ip(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_probe_asn returns the probe ASN.
+/// mkgeoip_results_get_probe_asn returns the probe ASN.
 const char *mkgeoip_results_get_probe_asn(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_probe_cc returns the probe CC.
+/// mkgeoip_results_get_probe_cc returns the probe CC.
 const char *mkgeoip_results_get_probe_cc(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_probe_network_name returns the probe network name.
+/// mkgeoip_results_get_probe_network_name returns the probe network name.
 const char *mkgeoip_results_get_probe_network_name(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_bytes_sent get the bytes sent during the lookup.
+/// mkgeoip_results_get_bytes_sent get the bytes sent during the lookup.
 double mkgeoip_results_get_bytes_sent(mkgeoip_results_t *p);
 
-// mkgeoip_results_get_bytes_sent get the bytes recv during the lookup.
+/// mkgeoip_results_get_bytes_sent get the bytes recv during the lookup.
 double mkgeoip_results_get_bytes_recv(mkgeoip_results_t *p);
 
 // mkgeoip_results_get_bytes_sent get the lookup logs.
@@ -116,6 +116,8 @@ mkgeoip_results_t *mkgeoip_lookup(const mkgeoip_settings_t *p);
 
 #ifdef __cplusplus
 }  // extern "C"
+
+#include <memory>
 
 // mkgeoip_settings_deleter is a custom deleter for mkgeoip_settings_t.
 struct mkgeoip_settings_deleter {
