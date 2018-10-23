@@ -88,14 +88,14 @@ double mkgeoip_results_get_bytes_recv(const mkgeoip_results_t *p);
 
 /// mkgeoip_results_get_bytes_sent get the lookup logs. In principle logs
 /// should be UTF-7, however in some cases they MAY contain some binary data,
-/// hence mkgeoip_results_get_logs_binary as a safer but less handly API. It
+/// hence mkgeoip_results_get_logs_binary_v2 as a safer but less handly API. It
 /// may return NULL in case of errors.
 const char *mkgeoip_results_get_logs(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_logs_binary gives you the base and the size of the logs
-/// byte array. It returns true on success and fails on failure.
-int64_t mkgeoip_results_get_logs_binary(const mkgeoip_results_t *p,
-                                        const uint8_t **b, uint64_t *n);
+/// mkgeoip_results_get_logs_binary_v2 gives you the base and the size of the
+/// logs byte array. It returns true on success and fails on failure.
+int64_t mkgeoip_results_get_logs_binary_v2(const mkgeoip_results_t *p,
+                                           const uint8_t **b, size_t *n);
 
 /// mkgeoip_results_delete deletes a results instance.
 void mkgeoip_results_delete(mkgeoip_results_t *p);
@@ -215,11 +215,11 @@ const char *mkgeoip_results_get_logs(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->logs.c_str() : "";
 }
 
-int64_t mkgeoip_results_get_logs_binary(const mkgeoip_results_t *p,
-                                        const uint8_t **b, uint64_t *n) {
+int64_t mkgeoip_results_get_logs_binary_v2(const mkgeoip_results_t *p,
+                                           const uint8_t **b, size_t *n) {
   if (p == nullptr || b == nullptr || n == nullptr) return false;
   *b = (const uint8_t *)p->logs.c_str();
-  *n = (uint64_t)p->logs.size();
+  *n = p->logs.size();
   return true;
 }
 
@@ -275,8 +275,8 @@ static bool lookup_ip(const mkgeoip_settings_t *p, mkgeoip_results_uptr &r) {
     // TODO(bassosimone): in this case it would make sense to have a function
     // that moves out the logs, because it's a waste to double copy.
     const uint8_t *base = nullptr;
-    uint64_t length = 0;
-    if (!mkcurl_response_get_logs_binary(res.get(), &base, &length)) {
+    size_t length = 0;
+    if (!mkcurl_response_get_logs_binary_v2(res.get(), &base, &length)) {
       r->error = MKGEOIP_ENOMEM;
       return false;
     }
@@ -293,8 +293,8 @@ static bool lookup_ip(const mkgeoip_settings_t *p, mkgeoip_results_uptr &r) {
   std::string body;
   {
     const uint8_t *base = nullptr;
-    uint64_t count = 0;
-    if (!mkcurl_response_get_body_binary(res.get(), &base, &count)) {
+    size_t count = 0;
+    if (!mkcurl_response_get_body_binary_v2(res.get(), &base, &count)) {
       r->error = MKGEOIP_ENOMEM;
       return false;
     }
