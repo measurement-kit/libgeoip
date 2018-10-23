@@ -53,7 +53,7 @@ set(MKGEOIP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
 add_executable(mkgeoip-client mkgeoip-client.cpp)
 target_include_directories(mkgeoip-client PUBLIC ${MKGEOIP_INCLUDES})
 list (APPEND MKGEOIP_LIBS ${CURL_LIBRARIES})
-install(FILES mkgeoip.h DESTINATION include/measurement-kit/mkgeoip)
+install(FILES mkgeoip.h DESTINATION include/measurement-kit)
 install(TARGETS mkgeoip-client DESTINATION bin)
 if("${WIN32}" OR "${MINGW}")
   list(APPEND MKGEOIP_LIBS "ws2_32")

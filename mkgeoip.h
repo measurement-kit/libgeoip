@@ -1,5 +1,5 @@
-#ifndef MKGEOIP_MKGEOIP_H
-#define MKGEOIP_MKGEOIP_H
+#ifndef MEASUREMENT_KIT_MKGEOIP_H
+#define MEASUREMENT_KIT_MKGEOIP_H
 
 #include <stdint.h>
 
@@ -473,4 +473,4 @@ static bool lookup_mmdb_using_probe_ip(
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
-#endif  // MKGEOIP_MKGEOIP_H
+#endif  // MEASUREMENT_KIT_MKGEOIP_H
