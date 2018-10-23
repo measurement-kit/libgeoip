@@ -1,77 +1,55 @@
-#ifndef MEASUREMENT_KIT_MKGEOIP_MKGEOIP_H
-#define MEASUREMENT_KIT_MKGEOIP_MKGEOIP_H
+#ifndef MKGEOIP_MKGEOIP_H
+#define MKGEOIP_MKGEOIP_H
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Mkgeoip discovers the probe IP, country code (CC), autonomous system
-// numer (ASN), and network name (i.e. the ASN description).
-//
-// This is the typical workflow of integrating mkgeoip into a project:
-//
-// 1. download the latest measurement-kit/mkcurl into the current directory
-//
-// 2. download mkgeoip.h
-//
-// 3. make sure you include mkcurl.h first
-//
-// 4. then include mkgeoip.h
-//
-// 5. depending on your needs also define MKCURL_INLINE_IMPL before
-//    including libcurlx.h and MKGEOIP_INLINE_IMPL before including mkgeoip.h
-//
-// This is the typical workflow of using mkgeoip:
-//
-// 1. create a mkgeoip_settings_t instance
-//
-// 2. populate the settings
-//
-// 3. call mkgeoip_lookup() with the specified settings to obtain
-//    a mkgeoip_results_t instance
-//
-// 4. destroy the settings instance
-//
-// 5. use the results (make sure you check whether an error occurred
-//    by using mkgeoip_results_get_error() first)
-//
-// 6. destroy the results instance
-
 /// mkgeoip_error enumerates all possible error conditions.
 typedef enum mkgeoip_error {
-  MKGEOIP_ENONE,
-  MKGEOIP_EFAULT,
-  MKGEOIP_ECURL,
-  MKGEOIP_ENOMEM,
-  MKGEOIP_EHTTP,
-  MKGEOIP_EMMDBGETVALUE,
-  MKGEOIP_ENODATAFORTYPE,
-  MKGEOIP_ENOTFOUND,
-  MKGEOIP_EGETADDRINFO,
-  MKGEOIP_EMMDBLOOKUPSTRING,
-  MKGEOIP_EMMDBOPEN,
+  MKGEOIP_ENONE,              ///< No error
+  MKGEOIP_EFAULT,             ///< You passed me a null pointer
+  MKGEOIP_ECURL,              ///< CURL failed
+  MKGEOIP_ENOMEM,             ///< Out of memory
+  MKGEOIP_EHTTP,              ///< Server returned non 200 error code
+  MKGEOIP_EMMDBGETVALUE,      ///< Error getting key from entry
+  MKGEOIP_ENODATAFORTYPE,     ///< No data of the requested type in MMDB
+  MKGEOIP_ENOTFOUND,          ///< No entry for the specified key
+  MKGEOIP_EGETADDRINFO,       ///< You passed me an invalid IP
+  MKGEOIP_EMMDBLOOKUPSTRING,  ///< Failure searching the MMDB database
+  MKGEOIP_EMMDBOPEN,          ///< Cannot open MMDB database
 } mkgeoip_error_t;
 
 /// mkgeoip_settings_t contains the settings.
 typedef struct mkgeoip_settings mkgeoip_settings_t;
 
-/// mkgeoip_settings_new creates a new settings instance.
+/// mkgeoip_settings_new creates a new settings instance. May return NULL
+/// in case of allocation errors.
 mkgeoip_settings_t *mkgeoip_settings_new(void);
 
-/// mkgeoip_settings_set_timeout changes the default timeout for I/O.
-void mkgeoip_settings_set_timeout(mkgeoip_settings_t *p, int v);
+/// mkgeoip_settings_set_timeout changes the default timeout after which an
+/// HTTP request is aborted. By default we use a reasonably good value. We use
+/// mkgeoip to contact services useful to find out our external IP address. A
+/// zero or negative timeout disables any timeout.
+void mkgeoip_settings_set_timeout(mkgeoip_settings_t *p, int64_t v);
 
 /// mkgeoip_settings_set_country_db_path sets the path to the county
-/// database. We currently use libmaxminddb as a backend.
+/// database. We currently use libmaxminddb as a backend, so you should
+/// include in your app the proper .mmdb file.
 void mkgeoip_settings_set_country_db_path(mkgeoip_settings_t *p,
                                           const char *v);
 
 /// mkgeoip_settings_set_asn_db_path sets the path to the ASN
-/// database. We currently use libmaxminddb as a backend.
+/// database. We currently use libmaxminddb as a backend, so you should
+/// include in your app the proper .mmdb file.
 void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p,
                                       const char *v);
 
-/// mkgeoip_settings_set_ca_bundle_path sets path to CA bundle path.
+/// mkgeoip_settings_set_ca_bundle_path sets path to CA bundle path. This is
+/// most likely required when running on mobile devices, where you need to add
+/// a CA bundle. See, e.g., <https://curl.haxx.se/docs/caextract.html>.
 void mkgeoip_settings_set_ca_bundle_path(mkgeoip_settings_t *p, const char *ca);
 
 /// mkgeoip_settings_delete deletes a settings instance.
@@ -81,37 +59,52 @@ void mkgeoip_settings_delete(mkgeoip_settings_t *p);
 typedef struct mkgeoip_results mkgeoip_results_t;
 
 /// mkgeoip_results_get_error returs the error that occurred.
-mkgeoip_error_t mkgeoip_results_get_error(mkgeoip_results_t *p);
+mkgeoip_error_t mkgeoip_results_get_error(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_probe_ip returns the probe IP.
-const char *mkgeoip_results_get_probe_ip(mkgeoip_results_t *p);
+/// mkgeoip_results_get_probe_ip returns the probe IP. It may return NULL
+/// in case of error.
+const char *mkgeoip_results_get_probe_ip(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_probe_asn returns the probe ASN.
-const char *mkgeoip_results_get_probe_asn(mkgeoip_results_t *p);
+/// mkgeoip_results_get_probe_asn returns the probe ASN. The ASN is in the
+/// form "AS[0-9]+" and uniquely identifies a routing domain. May return NULL
+/// in case of error.
+const char *mkgeoip_results_get_probe_asn(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_probe_cc returns the probe CC.
-const char *mkgeoip_results_get_probe_cc(mkgeoip_results_t *p);
+/// mkgeoip_results_get_probe_cc returns the probe country code. May return
+/// NULL in case of error.
+const char *mkgeoip_results_get_probe_cc(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_probe_network_name returns the probe network name.
-const char *mkgeoip_results_get_probe_network_name(mkgeoip_results_t *p);
+/// mkgeoip_results_get_probe_network_name returns the probe network name. This
+/// is the textual description that accompanies a ASN. Returns NULL on error.
+const char *mkgeoip_results_get_probe_network_name(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_bytes_sent get the bytes sent during the lookup.
-double mkgeoip_results_get_bytes_sent(mkgeoip_results_t *p);
+/// mkgeoip_results_get_bytes_sent get the bytes sent during the IP lookup. It
+/// should be a positive value with zero fractional part.
+double mkgeoip_results_get_bytes_sent(const mkgeoip_results_t *p);
 
-/// mkgeoip_results_get_bytes_sent get the bytes recv during the lookup.
-double mkgeoip_results_get_bytes_recv(mkgeoip_results_t *p);
+/// mkgeoip_results_get_bytes_sent get the bytes received during the IP lookup,
+/// which should be a positive value with zero fractional part.
+double mkgeoip_results_get_bytes_recv(const mkgeoip_results_t *p);
 
-// mkgeoip_results_get_bytes_sent get the lookup logs.
-const char *mkgeoip_results_get_logs(mkgeoip_results_t *p);
+/// mkgeoip_results_get_bytes_sent get the lookup logs. In principle logs
+/// should be UTF-7, however in some cases they MAY contain some binary data,
+/// hence mkgeoip_results_get_logs_binary as a safer but less handly API. It
+/// may return NULL in case of errors.
+const char *mkgeoip_results_get_logs(const mkgeoip_results_t *p);
 
-// mkgeoip_results_delete deletes a results instance.
+/// mkgeoip_results_get_logs_binary gives you the base and the size of the logs
+/// byte array. It returns true on success and fails on failure.
+int64_t mkgeoip_results_get_logs_binary(const mkgeoip_results_t *p,
+                                        const uint8_t **b, uint64_t *n);
+
+/// mkgeoip_results_delete deletes a results instance.
 void mkgeoip_results_delete(mkgeoip_results_t *p);
 
-// mkgeoip_lookup resolves the probe IP, the probe ASN, the probe CC,
-// and the probe network name using the specified |p| settings. The return
-// value MAY be NULL under severe internal error conditions as well as when
-// the provided |p| parameter is NULL. Note that you own the pointer that
-// is returned by this function and must delete it when done.
+/// mkgeoip_lookup resolves the probe IP, the probe ASN, the probe CC,
+/// and the probe network name using the specified settings. The return
+/// value MAY be NULL under severe internal error conditions as well as when
+/// the provided parameter is NULL. Note that you own the pointer that
+/// is returned by this function and must delete it when done.
 mkgeoip_results_t *mkgeoip_lookup(const mkgeoip_settings_t *p);
 
 #ifdef __cplusplus
@@ -119,23 +112,23 @@ mkgeoip_results_t *mkgeoip_lookup(const mkgeoip_settings_t *p);
 
 #include <memory>
 
-// mkgeoip_settings_deleter is a custom deleter for mkgeoip_settings_t.
+/// mkgeoip_settings_deleter is a custom deleter for mkgeoip_settings_t.
 struct mkgeoip_settings_deleter {
   void operator()(mkgeoip_settings_t *p) { mkgeoip_settings_delete(p); }
 };
 
-// mkgeoip_settings_uptr is syntactic sugar for using a settings object with
-// RAII semantic when using this code from C++.
+/// mkgeoip_settings_uptr is syntactic sugar for using a settings object with
+/// RAII semantic when using this code from C++.
 using mkgeoip_settings_uptr = std::unique_ptr<mkgeoip_settings_t,
                                                mkgeoip_settings_deleter>;
 
-// mkgeoip_results_deleter is a custom deleter for mkgeoip_results_t.
+/// mkgeoip_results_deleter is a custom deleter for mkgeoip_results_t.
 struct mkgeoip_results_deleter {
   void operator()(mkgeoip_results_t *p) { mkgeoip_results_delete(p); }
 };
 
-// mkgeoip_results_uptr is syntactic sugar for using a results object with
-// RAII semantic when using this code from C++.
+/// mkgeoip_results_uptr is syntactic sugar for using a results object with
+/// RAII semantic when using this code from C++.
 using mkgeoip_results_uptr = std::unique_ptr<mkgeoip_results_t>;
 
 // By default the implementation is not included. You can force it being
@@ -152,7 +145,7 @@ using mkgeoip_results_uptr = std::unique_ptr<mkgeoip_results_t>;
 #include <maxminddb.h>
 
 struct mkgeoip_settings {
-  int timeout = 30  /* seconds */;
+  int64_t timeout = 30  /* seconds */;
   std::string country_db_path;
   std::string asn_db_path;
   std::string ca_path;
@@ -162,17 +155,16 @@ mkgeoip_settings_t *mkgeoip_settings_new() {
   return new mkgeoip_settings;
 }
 
-void mkgeoip_settings_set_timeout(mkgeoip_settings_t *p, int v) {
+void mkgeoip_settings_set_timeout(mkgeoip_settings_t *p, int64_t v) {
   if (p != nullptr) p->timeout = v;
 }
 
 void mkgeoip_settings_set_country_db_path(mkgeoip_settings_t *p,
-                                           const char *v) {
+                                          const char *v) {
   if (p != nullptr && v != nullptr) p->country_db_path = v;
 }
 
-void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p,
-                                            const char *v) {
+void mkgeoip_settings_set_asn_db_path(mkgeoip_settings_t *p, const char *v) {
   if (p != nullptr && v != nullptr) p->asn_db_path = v;
 }
 
@@ -196,35 +188,43 @@ struct mkgeoip_results {
   double bytes_sent = 0.0;
 };
 
-mkgeoip_error_t mkgeoip_results_get_error(mkgeoip_results_t *p) {
+mkgeoip_error_t mkgeoip_results_get_error(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->error : MKGEOIP_EFAULT;
 }
 
-const char *mkgeoip_results_get_probe_ip(mkgeoip_results_t *p) {
+const char *mkgeoip_results_get_probe_ip(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->probe_ip.c_str() : "";
 }
 
-const char *mkgeoip_results_get_probe_asn(mkgeoip_results_t *p) {
+const char *mkgeoip_results_get_probe_asn(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->probe_asn.c_str() : "";
 }
 
-const char *mkgeoip_results_get_probe_cc(mkgeoip_results_t *p) {
+const char *mkgeoip_results_get_probe_cc(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->probe_cc.c_str() : "";
 }
 
-const char *mkgeoip_results_get_probe_network_name(mkgeoip_results_t *p) {
+const char *mkgeoip_results_get_probe_network_name(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->probe_network_name.c_str() : "";
 }
 
-const char *mkgeoip_results_get_logs(mkgeoip_results_t *p) {
+const char *mkgeoip_results_get_logs(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->logs.c_str() : "";
 }
 
-double mkgeoip_results_get_bytes_recv(mkgeoip_results_t *p) {
+int64_t mkgeoip_results_get_logs_binary(const mkgeoip_results_t *p,
+                                        const uint8_t **b, uint64_t *n) {
+  if (p == nullptr || b == nullptr || n == nullptr) return false;
+  *b = (const uint8_t *)p->logs.c_str();
+  *n = (uint64_t)p->logs.size();
+  return true;
+}
+
+double mkgeoip_results_get_bytes_recv(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->bytes_recv : 0.0;
 }
 
-double mkgeoip_results_get_bytes_sent(mkgeoip_results_t *p) {
+double mkgeoip_results_get_bytes_sent(const mkgeoip_results_t *p) {
   return (p != nullptr) ? p->bytes_sent : 0.0;
 }
 
@@ -239,8 +239,9 @@ static bool lookup_asn(const mkgeoip_settings_t *, mkgeoip_results_uptr &);
 mkgeoip_results_t *mkgeoip_lookup(const mkgeoip_settings_t *p) {
   if (p == nullptr) return nullptr;
   mkgeoip_results_uptr r{new mkgeoip_results_t};
-  // TODO(bassosimone): see if we really need a failure logic
-  (void)lookup_ip(p, r);
+  if (!lookup_ip(p, r)) return r.release();
+  // Do not check for errors here because either one may fail without
+  // impacting on our possiblity to carry out the other lookup.
   (void)lookup_cc(p, r);
   (void)lookup_asn(p, r);
   return r.release();
@@ -267,7 +268,17 @@ static bool lookup_ip(const mkgeoip_settings_t *p, mkgeoip_results_uptr &r) {
   }
   r->bytes_sent += mkcurl_response_get_bytes_sent(res.get());
   r->bytes_recv += mkcurl_response_get_bytes_recv(res.get());
-  r->logs += mkcurl_response_get_logs(res.get());
+  {
+    // TODO(bassosimone): in this case it would make sense to have a function
+    // that moves out the logs, because it's a waste to double copy.
+    const uint8_t *base = nullptr;
+    uint64_t length = 0;
+    if (!mkcurl_response_get_logs_binary(res.get(), &base, &length)) {
+      r->error = MKGEOIP_ENOMEM;
+      return false;
+    }
+    r->logs += std::string{(char *)base, length};
+  }
   if (mkcurl_response_get_error(res.get()) != 0) {
     r->error = MKGEOIP_ECURL;
     return false;
@@ -276,7 +287,16 @@ static bool lookup_ip(const mkgeoip_settings_t *p, mkgeoip_results_uptr &r) {
     r->error = MKGEOIP_EHTTP;
     return false;
   }
-  std::string body = mkcurl_response_get_body(res.get());
+  std::string body;
+  {
+    const uint8_t *base = nullptr;
+    uint64_t count = 0;
+    if (!mkcurl_response_get_body_binary(res.get(), &base, &count)) {
+      r->error = MKGEOIP_ENOMEM;
+      return false;
+    }
+    body = std::string{(char *)base, count};
+  }
   if (!parse_ip(body, r)) {
     r->logs += "Failed to parse IP\n";
     return false;
@@ -293,7 +313,7 @@ static bool parse_ip(const std::string &s, mkgeoip_results_uptr &r) {
   std::string input = s;  // Making a copy
   auto pos = input.find(open_tag);
   if (pos == std::string::npos) return false;
-  input = input.substr(pos + open_tag.size());
+  input = input.substr(pos + open_tag.size());  // Find EOS in the worst case
   pos = input.find(close_tag);
   if (pos == std::string::npos) return false;
   input = input.substr(0, pos);
@@ -450,4 +470,4 @@ static bool lookup_mmdb_using_probe_ip(
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
-#endif  // MEASUREMENT_KIT_MKGEOIP_MKGEOIP_H
+#endif  // MKGEOIP_MKGEOIP_H
