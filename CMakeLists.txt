@@ -30,7 +30,6 @@ include(CheckIncludeFiles)
 
 check_include_files(maxminddb.h MKGEOIP_HAVE_MAXMINDDB_H)
 find_library(LIBMAXMINDDB_LIBRARY maxminddb)
-message(STATUS "${LIBMAXMINDDB_LIBRARY}")
 if (("${MKGEOIP_HAVE_MAXMINDDB_H}" STREQUAL "") OR
     ("${LIBMAXMINDDB_LIBRARY}" STREQUAL "LIBMAXMINDDB_LIBRARY-NOTFOUND"))
   message(FATAL_ERROR "Cannot find libmaxminddb")
