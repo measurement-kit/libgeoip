@@ -22,7 +22,7 @@ mkgeoip_ubuntu_parser_t *mkgeoip_ubuntu_parser_new(void);
 
 /// mkgeoip_ubuntu_parser_get_probe_ip extracts the probe IP from @p response
 /// if available, otherwise returns NULL. The returned string is managed by
-/// @p parser and is avalid until @p parser is valid _and_ you don't call again
+/// @p parser and is valid until @p parser is valid _and_ you don't call again
 /// mkgeoip_ubuntu_parser_get_probe_ip.
 const char *mkgeoip_ubuntu_parser_get_probe_ip(
     mkgeoip_ubuntu_parser_t *parser, const mkcurl_response_t *response);
@@ -30,7 +30,7 @@ const char *mkgeoip_ubuntu_parser_get_probe_ip(
 /// mkgeoip_ubuntu_parser_delete deletes @p parser.
 void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser);
 
-/// mkgeoip_mmdb_t is a wrapper around a MMDB database.
+/// mkgeoip_mmdb_t saves the results of MMDB queries.
 typedef struct mkgeoip_mmdb mkgeoip_mmdb_t;
 
 /// mkgeoip_mmdb_new creates a new mkgeoip_mmdb_t instance.
