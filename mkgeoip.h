@@ -33,27 +33,25 @@ void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser);
 /// mkgeoip_mmdb_t saves the results of MMDB queries.
 typedef struct mkgeoip_mmdb mkgeoip_mmdb_t;
 
-/// mkgeoip_mmdb_new creates a new mkgeoip_mmdb_t instance.
-mkgeoip_mmdb_t *mkgeoip_mmdb_new(void);
+/// mkgeoip_mmdb_open opens the database at @p path and returns the
+/// database instance or success, or NULL on failure.
+mkgeoip_mmdb_t *mkgeoip_mmdb_open(const char *path);
 
 /// mkgeoip_mmdb_lookup_cc returns the country code of @p ip using the
-/// database at @p path, or NULL in case of error. The returned string will
+/// @p mmdb databas, or NULL in case of error. The returned string will
 /// be valid until mkgeoip_mmdb_lookup_cc is called again on @p mmdb.
-const char *mkgeoip_mmdb_lookup_cc(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
+const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip);
 
 /// mkgeoip_mmdb_lookup_asn is like mkgeoip_mmdb_lookup_cc but returns
 /// the ASN on success and zero on failure.
-int64_t mkgeoip_mmdb_lookup_asn(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
+int64_t mkgeoip_mmdb_lookup_asn(mkgeoip_mmdb_t *mmdb, const char *ip);
 
 /// mkgeoip_mmdb_lookup_org is like mkgeoip_mmdb_lookup_cc but returns
 /// the organization bound to @p ip on success, NULL on failure.
-const char *mkgeoip_mmdb_lookup_org(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
+const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip);
 
-/// mkgeoip_mmdb_delete destroys @p mmdb
-void mkgeoip_mmdb_delete(mkgeoip_mmdb_t *mmdb);
+/// mkgeoip_mmdb_close closes @p mmdb.
+void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -73,7 +71,7 @@ using mkgeoip_ubuntu_parser_uptr = std::unique_ptr<
 
 /// mkgeoip_mmdb_deleter is a deleter for mkgeoip_mmdb_t.
 struct mkgeoip_mmdb_deleter {
-  void operator()(mkgeoip_mmdb_t *p) { mkgeoip_mmdb_delete(p); }
+  void operator()(mkgeoip_mmdb_t *p) { mkgeoip_mmdb_close(p); }
 };
 
 /// mkgeoip_mmdb_uptr is a unique pointer to mkgeoip_mmdb_t.
@@ -154,19 +152,35 @@ void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser) {
   delete parser;
 }
 
+struct mkgeoip_mmdb_s_deleter {
+  void operator()(MMDB_s *p) {
+    MMDB_close(p);
+    delete p;
+  }
+};
+
+using mkgeoip_mmdb_s_uptr = std::unique_ptr<MMDB_s, mkgeoip_mmdb_s_deleter>;
+
 struct mkgeoip_mmdb {
+  mkgeoip_mmdb_s_uptr mmdbs;
   std::string probe_cc;
   std::string probe_org;
 };
-
-mkgeoip_mmdb_t *mkgeoip_mmdb_new() {
-  return new mkgeoip_mmdb_t;
-}
 
 #ifndef MKGEOIP_MMDB_OPEN
 // MKGEOIP_MMDB_OPEN allows to mock MMDB_open
 #define MKGEOIP_MMDB_OPEN MMDB_open
 #endif
+
+mkgeoip_mmdb_t *mkgeoip_mmdb_open(const char *path) {
+  if (path == nullptr) return nullptr;
+  mkgeoip_mmdb_uptr mmdb{new mkgeoip_mmdb_t};
+  mmdb->mmdbs.reset(new MMDB_s);
+  if (MKGEOIP_MMDB_OPEN(path, MMDB_MODE_MMAP, mmdb->mmdbs.get()) != 0) {
+    return nullptr;
+  }
+  return mmdb.release();
+}
 
 #ifndef MKGEOIP_MMDB_GET_VALUE
 // MKGEOIP_MMDB_GET_VALUE allows to mock MMDB_get_value
@@ -179,28 +193,24 @@ mkgeoip_mmdb_t *mkgeoip_mmdb_new() {
 #endif
 
 static void mkgeoip_lookup_mmdb(
-    const std::string &path, const std::string &ip,
+    MMDB_s *mmdbp, const std::string &ip,
     std::function<void(MMDB_entry_s *)> fun) {
-  MMDB_s mmdb{};
-  if (MKGEOIP_MMDB_OPEN(path.c_str(), MMDB_MODE_MMAP, &mmdb) != 0) return;
   auto gai_error = 0;
   auto mmdb_error = 0;
-  auto record = MKGEOIP_MMDB_LOOKUP_STRING(&mmdb, ip.c_str(), &gai_error,
+  auto record = MKGEOIP_MMDB_LOOKUP_STRING(mmdbp, ip.c_str(), &gai_error,
                                            &mmdb_error);
   if (gai_error == 0 && mmdb_error == 0 && record.found_entry == true) {
     fun(&record.entry);
   }
-  MMDB_close(&mmdb);
 }
 
-const char *mkgeoip_mmdb_lookup_cc(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
-  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip) {
+  if (mmdb == nullptr || ip == nullptr) {
     return nullptr;
   }
   const char *rv = nullptr;
   mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
+      mmdb->mmdbs.get(), ip, [&](MMDB_entry_s *entry) {
         MMDB_entry_data_s data{};
         auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
             entry, &data, "registered_country", "iso_code", nullptr);
@@ -214,14 +224,13 @@ const char *mkgeoip_mmdb_lookup_cc(
   return rv;
 }
 
-int64_t mkgeoip_mmdb_lookup_asn(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
-  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+int64_t mkgeoip_mmdb_lookup_asn(mkgeoip_mmdb_t *mmdb, const char *ip) {
+  if (mmdb == nullptr || ip == nullptr) {
     return 0;
   }
   int64_t rv;
   mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
+      mmdb->mmdbs.get(), ip, [&](MMDB_entry_s *entry) {
         MMDB_entry_data_s data{};
         auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
             entry, &data, "autonomous_system_number", nullptr);
@@ -234,14 +243,13 @@ int64_t mkgeoip_mmdb_lookup_asn(
   return rv;
 }
 
-const char *mkgeoip_mmdb_lookup_org(
-    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
-  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip) {
+  if (mmdb == nullptr || ip == nullptr) {
     return nullptr;
   }
   const char *rv = nullptr;
   mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
+      mmdb->mmdbs.get(), ip, [&](MMDB_entry_s *entry) {
         MMDB_entry_data_s data{};
         auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
             entry, &data, "autonomous_system_organization", nullptr);
@@ -255,7 +263,7 @@ const char *mkgeoip_mmdb_lookup_org(
   return rv;
 }
 
-void mkgeoip_mmdb_delete(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
+void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
