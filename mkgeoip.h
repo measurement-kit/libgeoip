@@ -34,11 +34,11 @@ void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser);
 typedef struct mkgeoip_mmdb mkgeoip_mmdb_t;
 
 /// mkgeoip_mmdb_open opens the database at @p path and returns the
-/// database instance or success, or NULL on failure.
+/// database instance on success, or NULL on failure.
 mkgeoip_mmdb_t *mkgeoip_mmdb_open(const char *path);
 
 /// mkgeoip_mmdb_lookup_cc returns the country code of @p ip using the
-/// @p mmdb databas, or NULL in case of error. The returned string will
+/// @p mmdb database, or NULL in case of error. The returned string will
 /// be valid until @p mmdb is valid _and_ you don't call other lookup
 /// APIs using the same @p mmdb instance.
 const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip);
