@@ -12,38 +12,52 @@ int main() {
     std::clog << "Out of memory" << std::endl;
     exit(EXIT_FAILURE);
   }
-  mkgeoip_uptr geoip{mkgeoip_new()};
-  if (geoip == nullptr) {
+  mkcurl_request_set_url(request.get(), mkgeoip_ubuntu_get_url());
+  mkcurl_response_uptr response{mkcurl_perform(request.get())};
+  if (response == nullptr) {
     std::clog << "Out of memory" << std::endl;
     exit(EXIT_FAILURE);
   }
-  if (!mkgeoip_iplookup(geoip.get(), request.get())) {
-    std::clog << "mkgeoip_iplookup() failed" << std::endl;
-    std::clog << "=== BEGIN LOGS ===" << std::endl;
-    mkcurl_response_uptr response{mkgeoip_get_response(geoip.get())};
-    if (response == nullptr) {
-      std::clog << "Out of memory" << std::endl;
-      exit(EXIT_FAILURE);
-    }
-    std::clog << mkcurl_response_get_logs(response.get());
-    std::clog << "=== END LOGS ===" << std::endl;
+
+  mkgeoip_ubuntu_parser_uptr parser{mkgeoip_ubuntu_parser_new()};
+  if (parser == nullptr) {
+    std::clog << "Out of memory" << std::endl;
     exit(EXIT_FAILURE);
   }
-  const char *probe_ip = mkgeoip_get_probe_ip(geoip.get());
+  const char *probe_ip = mkgeoip_ubuntu_parser_get_probe_ip(
+      parser.get(), response.get());
+  if (!probe_ip) {
+    std::clog << "Cannot parse probe IP" << std::endl;
+    exit(EXIT_FAILURE);
+  }
   std::clog << "Probe IP: " << probe_ip << std::endl;
-  {
-    const char *probe_cc = mkgeoip_mmdb_query_probe_cc(
-        geoip.get(), probe_ip, "country.mmdb");
-    std::clog << "Probe CC: " << probe_cc << std::endl;
+
+  mkgeoip_mmdb_uptr mmdb{mkgeoip_mmdb_new()};
+  if (mmdb == nullptr) {
+    std::clog << "Out of memory" << std::endl;
+    exit(EXIT_FAILURE);
   }
   {
-    const char *probe_asn = mkgeoip_mmdb_query_probe_asn(
-        geoip.get(), probe_ip, "asn.mmdb");
+    const char *probe_cc = mkgeoip_mmdb_lookup_cc(
+        mmdb.get(), "country.mmdb", probe_ip);
+    if (probe_cc == nullptr) {
+      std::clog << "Cannot retrieve CC" << std::endl;
+    } else {
+      std::clog << "Probe CC: " << probe_cc << std::endl;
+    }
+  }
+  {
+    int64_t probe_asn = mkgeoip_mmdb_lookup_asn(
+        mmdb.get(), "asn.mmdb", probe_ip);
     std::clog << "Probe ASN: " << probe_asn << std::endl;
   }
   {
-    const char *probe_netname = mkgeoip_mmdb_query_probe_netname(
-        geoip.get(), probe_ip, "asn.mmdb");
-    std::clog << "Probe Network Name: " << probe_netname << std::endl;
+    const char *probe_org = mkgeoip_mmdb_lookup_org(
+        mmdb.get(), "asn.mmdb", probe_ip);
+    if (probe_org == nullptr) {
+      std::clog << "Cannot retrieve ORG" << std::endl;
+    } else {
+      std::clog << "Probe Network Name: " << probe_org << std::endl;
+    }
   }
 }

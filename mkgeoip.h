@@ -10,61 +10,74 @@
 extern "C" {
 #endif
 
-/// mkgeoip_t is a GeoIP resolver.
-typedef struct mkgeoip mkgeoip_t;
+/// mkgeoip_ubuntu_get_url returns Ubuntu-GeoIP-service's URL.
+const char *mkgeoip_ubuntu_get_url(void);
 
-/// mkgeoip_new creates a new GeoIP resolver.
-mkgeoip_t *mkgeoip_new(void);
+/// mkgeoip_ubuntu_parser_t is the context for parsing the HTTP response
+/// returned by Ubuntu's GEOIP service.
+typedef struct mkgeoip_ubuntu_parser mkgeoip_ubuntu_parser_t;
 
-/// mkgeoip_iplookup performs a IP lookup using the configured GeoIP
-/// resolver and returning the corresponding response. It will set the
-/// URL to point to a specific backend service, but it should not touch
-/// any other @p request field. Returns a boolean indicating success.
-int64_t mkgeoip_iplookup(mkgeoip_t *p, mkcurl_request_t *request);
+/// mkgeoip_ubuntu_parser_new creates a new mkgeoip_ubuntu_parser_t instance.
+mkgeoip_ubuntu_parser_t *mkgeoip_ubuntu_parser_new(void);
 
-/// mkgeoip_get_response returns a copy of the response received by
-/// mkgeoip_iplookup, or NULL in case of unexpected failure.
-mkcurl_response_t *mkgeoip_get_response(mkgeoip_t *p);
+/// mkgeoip_ubuntu_parser_get_probe_ip extracts the probe IP from @p response
+/// if available, otherwise returns NULL. The returned string is managed by
+/// @p parser and is avalid until @p parser is valid _and_ you don't call again
+/// mkgeoip_ubuntu_parser_get_probe_ip.
+const char *mkgeoip_ubuntu_parser_get_probe_ip(
+    mkgeoip_ubuntu_parser_t *parser, const mkcurl_response_t *response);
 
-/// mkgeoip_get_probe_ip returns the probe IP discovered using
-/// mkgeoip_iplookup. Returns NULL if mkgeoip_iplookup has not been called or
-/// there has been an error. The returned string will be invalidated by
-/// subsequent mkgeoip_lookup calls / as well as by calling mkgeoip_delete.
-const char *mkgeoip_get_probe_ip(mkgeoip_t *p);
+/// mkgeoip_ubuntu_parser_delete deletes @p parser.
+void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser);
 
-/// mkgeoip_mmdb_query_probe_cc queries the @p mmdb_country_path MMDB database
-/// to get the country code corresponding to @p probe_ip. Returns a country
-/// code on success, and NULL in case of failure. The returned string will be
-/// invalidated by calling mkgeoip_mmdb_query_probe_cc again or by calling the
-/// mkgeoip_delete destructor of @p p.
-const char *mkgeoip_mmdb_query_probe_cc(mkgeoip_t *p, const char *probe_ip,
-                                        const char *mmdb_country_path);
+/// mkgeoip_mmdb_t is a wrapper around a MMDB database.
+typedef struct mkgeoip_mmdb mkgeoip_mmdb_t;
 
-/// mkgeoip_mmdb_query_probe_asn is like mkgeoip_mmdb_query_probe_cc except
-/// that it returns the ASN associated to the @p probe_ip.
-const char *mkgeoip_mmdb_query_probe_asn(mkgeoip_t *p, const char *probe_ip,
-                                         const char *mmdb_asn_path);
+/// mkgeoip_mmdb_new creates a new mkgeoip_mmdb_t instance.
+mkgeoip_mmdb_t *mkgeoip_mmdb_new(void);
 
-/// mkgeoip_mmdb_query_probe_netname is like mkgeoip_mmdb_query_probe_cc except
-/// that it returns the name of the ASN associated to the @p probe_ip.
-const char *mkgeoip_mmdb_query_probe_netname(mkgeoip_t *p, const char *probe_ip,
-                                             const char *mmdb_asn_path);
+/// mkgeoip_mmdb_lookup_cc returns the country code of @p ip using the
+/// database at @p path, or NULL in case of error. The returned string will
+/// be valid until mkgeoip_mmdb_lookup_cc is called again on @p mmdb.
+const char *mkgeoip_mmdb_lookup_cc(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
 
-/// mkgeoip_delete destroys a @p p instance.
-void mkgeoip_delete(mkgeoip_t *p);
+/// mkgeoip_mmdb_lookup_asn is like mkgeoip_mmdb_lookup_cc but returns
+/// the ASN on success and zero on failure.
+int64_t mkgeoip_mmdb_lookup_asn(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
+
+/// mkgeoip_mmdb_lookup_org is like mkgeoip_mmdb_lookup_cc but returns
+/// the organization bound to @p ip on success, NULL on failure.
+const char *mkgeoip_mmdb_lookup_org(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
+
+/// mkgeoip_mmdb_close closes @p mmdb
+void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb);
 
 #ifdef __cplusplus
 }  // extern "C"
 
 #include <memory>
 
-/// mkgeoip_deleter is a deleter for mkgeoip_t.
-struct mkgeoip_deleter {
-  void operator()(mkgeoip_t *p) { mkgeoip_delete(p); }
+/// mkgeoip_ubuntu_parser_deleter is a deleter for mkgeoip_ubuntu_parser_t.
+struct mkgeoip_ubuntu_parser_deleter {
+  void operator()(mkgeoip_ubuntu_parser_t *p) {
+    mkgeoip_ubuntu_parser_delete(p);
+  }
 };
 
-/// mkgeoip_uptr is a unique pointer to mkgeoip_t.
-using mkgeoip_uptr = std::unique_ptr<mkgeoip_t, mkgeoip_deleter>;
+/// mkgeoip_ubuntu_parser_uptr is a unique pointer to mkgeoip_ubuntu_parser_t.
+using mkgeoip_ubuntu_parser_uptr = std::unique_ptr<
+    mkgeoip_ubuntu_parser_t, mkgeoip_ubuntu_parser_deleter>;
+
+/// mkgeoip_mmdb_deleter is a deleter for mkgeoip_mmdb_t.
+struct mkgeoip_mmdb_deleter {
+  void operator()(mkgeoip_mmdb_t *p) { mkgeoip_mmdb_close(p); }
+};
+
+/// mkgeoip_mmdb_uptr is a unique pointer to mkgeoip_mmdb_t.
+using mkgeoip_mmdb_uptr = std::unique_ptr<mkgeoip_mmdb_t, mkgeoip_mmdb_deleter>;
 
 // By default the implementation is not included. You can force it being
 // included by providing the following definition to the compiler.
@@ -80,23 +93,17 @@ using mkgeoip_uptr = std::unique_ptr<mkgeoip_t, mkgeoip_deleter>;
 
 #include <maxminddb.h>
 
-struct mkgeoip {
+const char *mkgeoip_ubuntu_get_url() {
+  return "https://geoip.ubuntu.com/lookup";
+}
+
+struct mkgeoip_ubuntu_parser {
   std::string probe_ip;
-  std::string probe_asn;
-  std::string probe_cc;
-  std::string probe_netname;
-  mkcurl_response_uptr response;
 };
 
-mkgeoip_t *mkgeoip_new() { return new mkgeoip_t; }
-
-// mkgeoip_parse_ip parse the page returned by https://geoip.ubuntu.com
-static bool mkgeoip_parse_ip(std::string &&s, std::string *rv);
-
-#ifndef MKGEOIP_MKCURL_PERFORM
-// MKGEOIP_MKCURL_PERFORM allows to mock mkcurl_perform.
-#define MKGEOIP_MKCURL_PERFORM mkcurl_perform
-#endif
+mkgeoip_ubuntu_parser_t *mkgeoip_ubuntu_parser_new() {
+  return new mkgeoip_ubuntu_parser_t;
+}
 
 #ifndef MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2
 // MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2 allows to mock
@@ -105,119 +112,65 @@ static bool mkgeoip_parse_ip(std::string &&s, std::string *rv);
   mkcurl_response_get_body_binary_v2
 #endif
 
-int64_t mkgeoip_iplookup(mkgeoip_t *p, mkcurl_request_t *request) {
-  if (p == nullptr || request == nullptr) return false;
-  mkcurl_request_set_url(request, "https://geoip.ubuntu.com/lookup");
-  p->response.reset(MKGEOIP_MKCURL_PERFORM(request));
-  if (p->response == nullptr) return false;
-  if (mkcurl_response_get_error(p->response.get()) != 0) {
-    return false;
-  }
-  if (mkcurl_response_get_status_code(p->response.get()) != 200) {
-    return false;
+const char *mkgeoip_ubuntu_parser_get_probe_ip(
+    mkgeoip_ubuntu_parser_t *parser, const mkcurl_response_t *response) {
+  if (parser == nullptr || response == nullptr) return nullptr;
+  if (mkcurl_response_get_error(response) != 0 ||
+      mkcurl_response_get_status_code(response) != 200) {
+    return nullptr;
   }
   std::string body;
   {
     const uint8_t *base = nullptr;
     size_t count = 0;
     if (!MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2(
-            p->response.get(), &base, &count) ||
+            response, &base, &count) ||
         base == nullptr || count <= 0) {
-      return false;
+      return nullptr;
     }
     body = std::string{(char *)base, count};
   }
-  return mkgeoip_parse_ip(std::move(body), &p->probe_ip);
+  {
+    static const std::string open_tag = "<Ip>";
+    static const std::string close_tag = "</Ip>";
+    auto pos = body.find(open_tag);
+    if (pos == std::string::npos) return nullptr;
+    body = body.substr(pos + open_tag.size());  // Find EOS in the worst case
+    pos = body.find(close_tag);
+    if (pos == std::string::npos) return nullptr;
+    body = body.substr(0, pos);
+    for (auto ch : body) {
+      if (isspace(ch)) continue;
+      ch = (char)tolower(ch);
+      auto ok = isdigit(ch) || (ch >= 'a' && ch <= 'f') || ch == '.' || ch == ':';
+      if (!ok) return nullptr;
+      parser->probe_ip += ch;
+    }
+  }
+  return parser->probe_ip.c_str();
 }
 
-mkcurl_response_t *mkgeoip_get_response(mkgeoip_t *p) {
-  return (p != nullptr) ? mkcurl_response_copy(p->response.get()) : nullptr;
+void mkgeoip_ubuntu_parser_delete(mkgeoip_ubuntu_parser_t *parser) {
+  delete parser;
 }
 
-const char *mkgeoip_get_probe_ip(mkgeoip_t *p) {
-  return (p != nullptr) ? p->probe_ip.c_str() : nullptr;
+struct mkgeoip_mmdb {
+  std::string probe_cc;
+  std::string probe_org;
+};
+
+mkgeoip_mmdb_t *mkgeoip_mmdb_new() {
+  return new mkgeoip_mmdb_t;
 }
-
-// mkgeoip_lookup_cc searches for the country code of an IP.
-static bool mkgeoip_lookup_cc(
-    const std::string &path, const std::string &ip, std::string *out);
-
-const char *mkgeoip_mmdb_query_probe_cc(mkgeoip_t *p, const char *probe_ip,
-                                        const char *mmdb_country_path) {
-  if (probe_ip == nullptr || p == nullptr || mmdb_country_path == nullptr) {
-    return nullptr;
-  }
-  if (!mkgeoip_lookup_cc(mmdb_country_path, probe_ip, &p->probe_cc)) {
-    return nullptr;
-  }
-  return p->probe_cc.c_str();
-}
-
-// mkgeoip_lookup_asn searches for the ASN of an IP.
-static bool mkgeoip_lookup_asn(
-    const std::string &path, const std::string &ip, std::string *out);
-
-const char *mkgeoip_mmdb_query_probe_asn(mkgeoip_t *p, const char *probe_ip,
-                                         const char *mmdb_asn_path) {
-  if (probe_ip == nullptr || p == nullptr || mmdb_asn_path == nullptr) {
-    return nullptr;
-  }
-  if (!mkgeoip_lookup_asn(mmdb_asn_path, probe_ip, &p->probe_asn)) {
-    return nullptr;
-  }
-  return p->probe_asn.c_str();
-}
-
-// mkgeoip_lookup_asn searches for the ASN name of an IP.
-static bool mkgeoip_lookup_netname(
-    const std::string &path, const std::string &ip, std::string *out);
-
-const char *mkgeoip_mmdb_query_probe_netname(mkgeoip_t *p, const char *probe_ip,
-                                             const char *mmdb_asn_path) {
-  if (probe_ip == nullptr || p == nullptr || mmdb_asn_path == nullptr) {
-    return nullptr;
-  }
-  if (!mkgeoip_lookup_netname(mmdb_asn_path, probe_ip, &p->probe_netname)) {
-    return nullptr;
-  }
-  return p->probe_netname.c_str();
-}
-
-void mkgeoip_delete(mkgeoip_t *p) { delete p; }
-
-static bool mkgeoip_parse_ip(std::string &&input, std::string *rv) {
-  if (rv == nullptr) return false;
-  static const std::string open_tag = "<Ip>";
-  static const std::string close_tag = "</Ip>";
-  auto pos = input.find(open_tag);
-  if (pos == std::string::npos) return false;
-  input = input.substr(pos + open_tag.size());  // Find EOS in the worst case
-  pos = input.find(close_tag);
-  if (pos == std::string::npos) return false;
-  input = input.substr(0, pos);
-  for (auto ch : input) {
-    if (isspace(ch)) continue;
-    ch = (char)tolower(ch);
-    auto ok = isdigit(ch) || (ch >= 'a' && ch <= 'f') || ch == '.' || ch == ':';
-    if (!ok) return false;
-    *rv += ch;
-  }
-  return true;
-}
-
-// mkgeoip_lookup_mmdb is the generic MMDB lookup function
-static bool mkgeoip_lookup_mmdb(
-    const std::string &path, const std::string &ip,
-    std::function<bool(MMDB_entry_s *)> fun);
-
-#ifndef MKGEOIP_MMDB_GET_VALUE
-// MKGEOIP_MMDB_GET_VALUE allows to mock MMDB_get_value
-#define MKGEOIP_MMDB_GET_VALUE MMDB_get_value
-#endif
 
 #ifndef MKGEOIP_MMDB_OPEN
 // MKGEOIP_MMDB_OPEN allows to mock MMDB_open
 #define MKGEOIP_MMDB_OPEN MMDB_open
+#endif
+
+#ifndef MKGEOIP_MMDB_GET_VALUE
+// MKGEOIP_MMDB_GET_VALUE allows to mock MMDB_get_value
+#define MKGEOIP_MMDB_GET_VALUE MMDB_get_value
 #endif
 
 #ifndef MKGEOIP_MMDB_LOOKUP_STRING
@@ -225,73 +178,84 @@ static bool mkgeoip_lookup_mmdb(
 #define MKGEOIP_MMDB_LOOKUP_STRING MMDB_lookup_string
 #endif
 
-static bool mkgeoip_lookup_cc(
-    const std::string &path, const std::string &ip, std::string *out) {
-  return mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
-        MMDB_entry_data_s data{};
-        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
-            entry, &data, "registered_country", "iso_code", nullptr);
-        if (mmdb_error != 0) return false;
-        if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
-          return false;
-        }
-        if (out == nullptr) return false;
-        *out = std::string{data.utf8_string, data.data_size};
-        return true;
-      });
-}
-
-static bool mkgeoip_lookup_asn(
-    const std::string &path, const std::string &ip, std::string *out) {
-  return mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
-        MMDB_entry_data_s data{};
-        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
-            entry, &data, "autonomous_system_number", nullptr);
-        if (mmdb_error != 0) return false;
-        if (!data.has_data || data.type != MMDB_DATA_TYPE_UINT32) {
-          return false;
-        }
-        if (out == nullptr) return false;
-        *out = std::string{"AS"} + std::to_string(data.uint32);
-        return true;
-      });
-}
-
-static bool mkgeoip_lookup_netname(
-    const std::string &path, const std::string &ip, std::string *out) {
-  return mkgeoip_lookup_mmdb(
-      path, ip, [&](MMDB_entry_s *entry) {
-        MMDB_entry_data_s data{};
-        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
-            entry, &data, "autonomous_system_organization", nullptr);
-        if (mmdb_error != 0) return false;
-        if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
-          return false;
-        }
-        if (out == nullptr) return false;
-        *out = std::string{data.utf8_string, data.data_size};
-        return true;
-      });
-}
-
-static bool mkgeoip_lookup_mmdb(
+static void mkgeoip_lookup_mmdb(
     const std::string &path, const std::string &ip,
-    std::function<bool(MMDB_entry_s *)> fun) {
+    std::function<void(MMDB_entry_s *)> fun) {
   MMDB_s mmdb{};
-  if (MKGEOIP_MMDB_OPEN(path.c_str(), MMDB_MODE_MMAP, &mmdb) != 0) return false;
-  auto rv = false;
+  if (MKGEOIP_MMDB_OPEN(path.c_str(), MMDB_MODE_MMAP, &mmdb) != 0) return;
   auto gai_error = 0;
   auto mmdb_error = 0;
   auto record = MKGEOIP_MMDB_LOOKUP_STRING(&mmdb, ip.c_str(), &gai_error,
                                            &mmdb_error);
   if (gai_error == 0 && mmdb_error == 0 && record.found_entry == true) {
-    rv = fun(&record.entry);
+    fun(&record.entry);
   }
   MMDB_close(&mmdb);
+}
+
+const char *mkgeoip_mmdb_lookup_cc(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
+  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+    return nullptr;
+  }
+  const char *rv = nullptr;
+  mkgeoip_lookup_mmdb(
+      path, ip, [&](MMDB_entry_s *entry) {
+        MMDB_entry_data_s data{};
+        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
+            entry, &data, "registered_country", "iso_code", nullptr);
+        if (mmdb_error != 0) return;
+        if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
+          return;
+        }
+        mmdb->probe_cc = std::string{data.utf8_string, data.data_size};
+        rv = mmdb->probe_cc.c_str();
+      });
   return rv;
 }
+
+int64_t mkgeoip_mmdb_lookup_asn(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
+  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+    return 0;
+  }
+  int64_t rv;
+  mkgeoip_lookup_mmdb(
+      path, ip, [&](MMDB_entry_s *entry) {
+        MMDB_entry_data_s data{};
+        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
+            entry, &data, "autonomous_system_number", nullptr);
+        if (mmdb_error != 0) return;
+        if (!data.has_data || data.type != MMDB_DATA_TYPE_UINT32) {
+          return;
+        }
+        rv = data.uint32;
+      });
+  return rv;
+}
+
+const char *mkgeoip_mmdb_lookup_org(
+    mkgeoip_mmdb_t *mmdb, const char *path, const char *ip) {
+  if (mmdb == nullptr || path == nullptr || ip == nullptr) {
+    return nullptr;
+  }
+  const char *rv = nullptr;
+  mkgeoip_lookup_mmdb(
+      path, ip, [&](MMDB_entry_s *entry) {
+        MMDB_entry_data_s data{};
+        auto mmdb_error = MKGEOIP_MMDB_GET_VALUE(
+            entry, &data, "autonomous_system_organization", nullptr);
+        if (mmdb_error != 0) return;
+        if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
+          return;
+        }
+        mmdb->probe_org = std::string{data.utf8_string, data.data_size};
+        rv = mmdb->probe_org.c_str();
+      });
+  return rv;
+}
+
+void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
