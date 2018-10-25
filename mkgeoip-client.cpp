@@ -29,7 +29,10 @@ int main() {
   if (!probe_ip) {
     std::clog << "Cannot parse probe IP" << std::endl;
     std::clog << "=== BEGIN LOGS ===" << std::endl;
-    std::clog << mkcurl_response_get_logs(response.get());
+    const char *logs = mkcurl_response_get_logs(response.get());
+    if (logs != nullptr) {
+      std::clog << logs;
+    }
     std::clog << "=== END LOGS ===" << std::endl;
     exit(EXIT_FAILURE);
   }
