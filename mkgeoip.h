@@ -39,7 +39,8 @@ mkgeoip_mmdb_t *mkgeoip_mmdb_open(const char *path);
 
 /// mkgeoip_mmdb_lookup_cc returns the country code of @p ip using the
 /// @p mmdb databas, or NULL in case of error. The returned string will
-/// be valid until mkgeoip_mmdb_lookup_cc is called again on @p mmdb.
+/// be valid until @p mmdb is valid _and_ you don't call other lookup
+/// APIs using the same @p mmdb instance.
 const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip);
 
 /// mkgeoip_mmdb_lookup_asn is like mkgeoip_mmdb_lookup_cc but returns
@@ -47,7 +48,9 @@ const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip);
 int64_t mkgeoip_mmdb_lookup_asn(mkgeoip_mmdb_t *mmdb, const char *ip);
 
 /// mkgeoip_mmdb_lookup_org is like mkgeoip_mmdb_lookup_cc but returns
-/// the organization bound to @p ip on success, NULL on failure.
+/// the organization bound to @p ip on success, NULL on failure. The
+/// returned string will be valid until @p mmdb is valid _and_ you don't
+/// call other lookup APIs using the same @p mmdb instance.
 const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip);
 
 /// mkgeoip_mmdb_close closes @p mmdb.
@@ -163,8 +166,7 @@ using mkgeoip_mmdb_s_uptr = std::unique_ptr<MMDB_s, mkgeoip_mmdb_s_deleter>;
 
 struct mkgeoip_mmdb {
   mkgeoip_mmdb_s_uptr mmdbs;
-  std::string probe_cc;
-  std::string probe_org;
+  std::string saved_string;
 };
 
 #ifndef MKGEOIP_MMDB_OPEN
@@ -218,8 +220,8 @@ const char *mkgeoip_mmdb_lookup_cc(mkgeoip_mmdb_t *mmdb, const char *ip) {
         if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
           return;
         }
-        mmdb->probe_cc = std::string{data.utf8_string, data.data_size};
-        rv = mmdb->probe_cc.c_str();
+        mmdb->saved_string = std::string{data.utf8_string, data.data_size};
+        rv = mmdb->saved_string.c_str();
       });
   return rv;
 }
@@ -257,8 +259,8 @@ const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip) {
         if (!data.has_data || data.type != MMDB_DATA_TYPE_UTF8_STRING) {
           return;
         }
-        mmdb->probe_org = std::string{data.utf8_string, data.data_size};
-        rv = mmdb->probe_org.c_str();
+        mmdb->saved_string = std::string{data.utf8_string, data.data_size};
+        rv = mmdb->saved_string.c_str();
       });
   return rv;
 }

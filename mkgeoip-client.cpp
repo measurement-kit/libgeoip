@@ -28,6 +28,9 @@ int main() {
       parser.get(), response.get());
   if (!probe_ip) {
     std::clog << "Cannot parse probe IP" << std::endl;
+    std::clog << "=== BEGIN LOGS ===" << std::endl;
+    std::clog << mkcurl_response_get_logs(response.get());
+    std::clog << "=== END LOGS ===" << std::endl;
     exit(EXIT_FAILURE);
   }
   std::clog << "Probe IP: " << probe_ip << std::endl;
