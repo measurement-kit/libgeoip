@@ -52,8 +52,8 @@ int64_t mkgeoip_mmdb_lookup_asn(
 const char *mkgeoip_mmdb_lookup_org(
     mkgeoip_mmdb_t *mmdb, const char *path, const char *ip);
 
-/// mkgeoip_mmdb_close closes @p mmdb
-void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb);
+/// mkgeoip_mmdb_delete destroys @p mmdb
+void mkgeoip_mmdb_delete(mkgeoip_mmdb_t *mmdb);
 
 #ifdef __cplusplus
 }  // extern "C"
@@ -73,7 +73,7 @@ using mkgeoip_ubuntu_parser_uptr = std::unique_ptr<
 
 /// mkgeoip_mmdb_deleter is a deleter for mkgeoip_mmdb_t.
 struct mkgeoip_mmdb_deleter {
-  void operator()(mkgeoip_mmdb_t *p) { mkgeoip_mmdb_close(p); }
+  void operator()(mkgeoip_mmdb_t *p) { mkgeoip_mmdb_delete(p); }
 };
 
 /// mkgeoip_mmdb_uptr is a unique pointer to mkgeoip_mmdb_t.
@@ -255,7 +255,7 @@ const char *mkgeoip_mmdb_lookup_org(
   return rv;
 }
 
-void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
+void mkgeoip_mmdb_delete(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
