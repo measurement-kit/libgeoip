@@ -182,7 +182,9 @@ int64_t mkgeoip_ubuntu_response_parse(mkgeoip_ubuntu_response_t *response) {
   if (response->status_code != 200) return false;
   if (response->content_type != "text/xml" &&
       response->content_type != "application/xml") {
-    return false;
+    // NOTHING - TODO(bassosimone): make this code more robust by taking
+    // into account the "text/xml; encoding=utf-8" possibility. Until that
+    // point, returning error in this case is too strict.
   }
   std::string body = response->body;
   {
