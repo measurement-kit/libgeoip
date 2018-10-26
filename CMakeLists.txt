@@ -9,8 +9,9 @@ include(MkUtils)
 
 MkDownloadAdishavitArgh()
 MkDownloadCatchorgCatch2()
+MkDownloadMeasurementKitMkData()
 MkDownloadMeasurementKitMkCurl()
-MkDownloadGeoIP()
+MkDownloadMMDBDatabases()
 
 if("${MSVC}")
   MkDownloadMeasurementKitPrebuiltWindowsCurl()

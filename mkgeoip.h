@@ -4,54 +4,66 @@
 #ifndef MEASUREMENT_KIT_MKGEOIP_H
 #define MEASUREMENT_KIT_MKGEOIP_H
 
-#include "mkcurl.h"
+#include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/// mkgeoip_iplookup_ubuntu_get_url is a more low level interface to perfrom
-/// the IP lookup than mkgeoip_iplookup_ubuntu_perform. This function just
-/// returns the URL of the Ubuntu IP lookup services, and it is up to you to
-/// prepare a mkcurl_request_t, or perform the request entirely with any other
-/// means (e.g. using github.com/square/okhttp on Android).
-const char *mkgeoip_iplookup_ubuntu_get_url(void);
+/// mkgeoip_ubuntu_request_get_url returns the URL for querying the
+/// geolocation service provided by Ubuntu. This function MAY return NULL
+/// in case of serious internal error.
+const char *mkgeoip_ubuntu_request_get_url(void);
 
-/// mkgeoip_iplookup_ubuntu_perform is a more low level interface to perform
-/// the IP lookup than mkgeoip_iplookup_ubuntu_get_probe_ip. This function
-/// returns the response returned by Ubuntu services (which may indicate that
-/// an error occurred) or NULL in case of severe internal error. This API gives
-/// you the freedom to look into the response, therefore you can access the
-/// logs, extract the certificate chain, understand what went wrong, etc. To
-/// parse the probe IP (if any) from the response, you should then create a
-/// mkgeoip_iplookup_ubuntu_t instance to process the returned response.
-mkcurl_response_t *mkgeoip_iplookup_ubuntu_perform(void);
+/// mkgeoip_ubuntu_request_get_method returns the method for querying the
+/// geolocation service provided by Ubuntu. This function MAY return a NULL
+/// pointer in case of serious internal error.
+const char *mkgeoip_ubuntu_request_get_method(void);
 
-/// mkgeoip_iplookup_ubuntu_t looks up your public IP using Ubuntu services.
-typedef struct mkgeoip_iplookup_ubuntu mkgeoip_iplookup_ubuntu_t;
+/// mkgeoip_ubuntu_response_t is a response returned by the
+/// geolocation service provided by Ubuntu.
+typedef struct mkgeoip_ubuntu_response mkgeoip_ubuntu_response_t;
 
-/// mkgeoip_iplookup_ubuntu_new creates a mkgeoip_iplookup_ubuntu_t instance.
-mkgeoip_iplookup_ubuntu_t *mkgeoip_iplookup_ubuntu_new(void);
+/// mkgeoip_ubuntu_response_new creates a new ubuntu geolocation response.
+mkgeoip_ubuntu_response_t *mkgeoip_ubuntu_response_new(void);
 
-/// mkgeoip_iplookup_ubuntu_get_probe_ip performs the IP lookup using Ubuntu
-/// services and returns the IP on success, NULL on failure. This is the most
-/// simple interface to perform the IP lookup. The returned string will be
-/// valid as long as @p ubuntu is valid and you do not call any other function
-/// that uses the same @p ubuntu instance.
-const char *mkgeoip_iplookup_ubuntu_get_probe_ip(
-    mkgeoip_iplookup_ubuntu_t *ubuntu);
+/// mkgeoip_ubuntu_response_set_status_code sets the status code received
+/// by the geolocation service provided by Ubuntu.
+void mkgeoip_ubuntu_response_set_status_code(
+    mkgeoip_ubuntu_response_t *response,
+    int64_t status_code);
 
-/// mkgeoip_iplookup_ubuntu_parse_probe_ip extracts the IP from the @p response
-/// if available, otherwise returns NULL. The returned string is managed by
-/// @p ubuntu and is valid until @p ubuntu is valid _and_ you don't call again
-/// any other function that uses the same @p ubuntu instance.
-const char *mkgeoip_iplookup_ubuntu_parse_probe_ip(
-    mkgeoip_iplookup_ubuntu_t *ubuntu, const mkcurl_response_t *response);
+/// mkgeoip_ubuntu_response_set_content_type sets the content type received
+/// by the geolocation service provided by Ubuntu.
+void mkgeoip_ubuntu_response_set_content_type(
+    mkgeoip_ubuntu_response_t *response,
+    const char *content_type);
 
-/// mkgeoip_iplookup_ubuntu_delete deletes @p ubuntu.
-void mkgeoip_iplookup_ubuntu_delete(mkgeoip_iplookup_ubuntu_t *ubuntu);
+/// mkgeoip_ubuntu_response_set_body_binary sets the binary response body
+/// received by the geolocation service provided by Ubuntu.
+void mkgeoip_ubuntu_response_set_body_binary(
+    mkgeoip_ubuntu_response_t *response,
+    const uint8_t *base, size_t count);
 
-/// mkgeoip_mmdb_t saves the results of MMDB queries.
+/// mkgeoip_ubuntu_response_parse parses the fields previously set inside
+/// of @p response to extract the IP address. Returns true on success, and
+/// false on failure. On failure, inspect the original HTTP response body
+/// and status code to understand what went wrong.
+int64_t mkgeoip_ubuntu_response_parse(mkgeoip_ubuntu_response_t *response);
+
+/// mkgeoip_ubuntu_response_get_probe_ip returns the probe IP previously
+/// parsed using mkgeoip_ubuntu_response_parse. If parsing did not succeed
+/// it returns an empty string. MAY return NULL on internal error. The
+/// returned string is valid as long as @p response is alive and no other
+/// API is invoked on the @p response instance.
+const char *mkgeoip_ubuntu_response_get_probe_ip(
+    mkgeoip_ubuntu_response_t *response);
+
+/// mkgeoip_ubuntu_response_delete destroys @p response.
+void mkgeoip_ubuntu_response_delete(mkgeoip_ubuntu_response_t *response);
+
+/// mkgeoip_mmdb_t is an open MMDB database.
 typedef struct mkgeoip_mmdb mkgeoip_mmdb_t;
 
 /// mkgeoip_mmdb_open opens the database at @p path and returns the
@@ -81,17 +93,18 @@ void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb);
 }  // extern "C"
 
 #include <memory>
+#include <string>
 
-/// mkgeoip_iplookup_ubuntu_deleter is a deleter for mkgeoip_iplookup_ubuntu_t.
-struct mkgeoip_iplookup_ubuntu_deleter {
-  void operator()(mkgeoip_iplookup_ubuntu_t *p) {
-    mkgeoip_iplookup_ubuntu_delete(p);
+/// mkgeoip_ubuntu_response_deleter is a deleter for mkgeoip_ubuntu_response_t.
+struct mkgeoip_ubuntu_response_deleter {
+  void operator()(mkgeoip_ubuntu_response_t *p) {
+    mkgeoip_ubuntu_response_delete(p);
   }
 };
 
-/// mkgeoip_iplookup_ubuntu_uptr is a unique pointer to mkgeoip_iplookup_ubuntu_t.
-using mkgeoip_iplookup_ubuntu_uptr = std::unique_ptr<
-    mkgeoip_iplookup_ubuntu_t, mkgeoip_iplookup_ubuntu_deleter>;
+/// mkgeoip_ubuntu_response_uptr is a unique pointer to mkgeoip_ubuntu_response_t.
+using mkgeoip_ubuntu_response_uptr = std::unique_ptr<
+    mkgeoip_ubuntu_response_t, mkgeoip_ubuntu_response_deleter>;
 
 /// mkgeoip_mmdb_deleter is a deleter for mkgeoip_mmdb_t.
 struct mkgeoip_mmdb_deleter {
@@ -100,6 +113,12 @@ struct mkgeoip_mmdb_deleter {
 
 /// mkgeoip_mmdb_uptr is a unique pointer to mkgeoip_mmdb_t.
 using mkgeoip_mmdb_uptr = std::unique_ptr<mkgeoip_mmdb_t, mkgeoip_mmdb_deleter>;
+
+/// mkgeoip_ubuntu_response_movein_body moves @p body as the @p response body
+/// and returns true on success and false on failure.
+int64_t mkgeoip_ubuntu_response_movein_body(
+    mkgeoip_ubuntu_response_t *response,
+    std::string &&body);
 
 // By default the implementation is not included. You can force it being
 // included by providing the following definition to the compiler.
@@ -110,84 +129,97 @@ using mkgeoip_mmdb_uptr = std::unique_ptr<mkgeoip_mmdb_t, mkgeoip_mmdb_deleter>;
 #include <ctype.h>
 
 #include <functional>
-#include <string>
 #include <vector>
 
 #include <maxminddb.h>
 
-mkcurl_response_t *mkgeoip_iplookup_ubuntu_perform() {
-  mkcurl_request_uptr request{mkcurl_request_new()};
-  if (request == nullptr) return nullptr;
-  mkcurl_request_set_url(request.get(), mkgeoip_iplookup_ubuntu_get_url());
-  return mkcurl_perform(request.get());
-}
+#include "mkdata.h"
 
-const char *mkgeoip_iplookup_ubuntu_get_url() {
+const char *mkgeoip_ubuntu_request_get_url() {
   return "https://geoip.ubuntu.com/lookup";
 }
 
-struct mkgeoip_iplookup_ubuntu {
+const char *mkgeoip_ubuntu_request_get_method() {
+  return "GET";
+}
+
+struct mkgeoip_ubuntu_response {
+  std::string content_type;
+  std::string body;
+  int64_t status_code = 0;
   std::string probe_ip;
 };
 
-mkgeoip_iplookup_ubuntu_t *mkgeoip_iplookup_ubuntu_new() {
-  return new mkgeoip_iplookup_ubuntu_t;
+mkgeoip_ubuntu_response_t *mkgeoip_ubuntu_response_new() {
+  return new mkgeoip_ubuntu_response_t;
 }
 
-const char *mkgeoip_iplookup_ubuntu_get_probe_ip(
-    mkgeoip_iplookup_ubuntu_t *ubuntu) {
-  mkcurl_response_uptr response{mkgeoip_iplookup_ubuntu_perform()};
-  if (response == nullptr) return nullptr;
-  return mkgeoip_iplookup_ubuntu_parse_probe_ip(ubuntu, response.get());
+void mkgeoip_ubuntu_response_set_status_code(
+    mkgeoip_ubuntu_response_t *response,
+    int64_t status_code) {
+  if (response != nullptr) response->status_code = status_code;
 }
 
-#ifndef MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2
-// MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2 allows to mock
-// mkcurl_response_get_body_binary_v2
-#define MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2  \
-  mkcurl_response_get_body_binary_v2
-#endif
-
-const char *mkgeoip_iplookup_ubuntu_parse_probe_ip(
-    mkgeoip_iplookup_ubuntu_t *ubuntu, const mkcurl_response_t *response) {
-  if (ubuntu == nullptr || response == nullptr) return nullptr;
-  if (mkcurl_response_get_error(response) != 0 ||
-      mkcurl_response_get_status_code(response) != 200) {
-    return nullptr;
+void mkgeoip_ubuntu_response_set_content_type(
+    mkgeoip_ubuntu_response_t *response,
+    const char *content_type) {
+  if (response != nullptr && content_type != nullptr) {
+    response->content_type = content_type;
   }
-  std::string body;
+}
+
+void mkgeoip_ubuntu_response_set_body_binary(
+    mkgeoip_ubuntu_response_t *response,
+    const uint8_t *base, size_t count) {
+  if (response != nullptr && base != nullptr && count > 0) {
+    response->body = std::string{(const char *)base, count};
+  }
+}
+
+int64_t mkgeoip_ubuntu_response_parse(mkgeoip_ubuntu_response_t *response) {
+  if (response == nullptr) return false;
+  response->probe_ip = "";  // reset
+  if (response->status_code != 200) return false;
+  if (response->content_type != "text/xml" &&
+      response->content_type != "application/xml") {
+    // NOTHING - TODO(bassosimone): make this code more robust by taking
+    // into account the "text/xml; encoding=utf-8" possibility. Until that
+    // point, returning error in this case is too strict.
+  }
+  std::string body = response->body;
   {
-    const uint8_t *base = nullptr;
-    size_t count = 0;
-    if (!MKGEOIP_MKCURL_RESPONSE_GET_BODY_BINARY_V2(
-            response, &base, &count) ||
-        base == nullptr || count <= 0) {
-      return nullptr;
-    }
-    body = std::string{(char *)base, count};
+    mkdata_uptr data{mkdata_new()};
+    mkdata_movein(data.get(), std::move(body));
+    if (!mkdata_contains_valid_utf8(data.get())) return false;
+    body = mkdata_moveout(data.get());
   }
   {
     static const std::string open_tag = "<Ip>";
     static const std::string close_tag = "</Ip>";
     auto pos = body.find(open_tag);
-    if (pos == std::string::npos) return nullptr;
+    if (pos == std::string::npos) return false;
     body = body.substr(pos + open_tag.size());  // Find EOS in the worst case
     pos = body.find(close_tag);
-    if (pos == std::string::npos) return nullptr;
+    if (pos == std::string::npos) return false;
     body = body.substr(0, pos);
     for (auto ch : body) {
       if (isspace(ch)) continue;
       ch = (char)tolower(ch);
       auto ok = isdigit(ch) || (ch >= 'a' && ch <= 'f') || ch == '.' || ch == ':';
-      if (!ok) return nullptr;
-      ubuntu->probe_ip += ch;
+      if (!ok) return false;
+      response->probe_ip += ch;
     }
   }
-  return ubuntu->probe_ip.c_str();
+  return true;
 }
 
-void mkgeoip_iplookup_ubuntu_delete(mkgeoip_iplookup_ubuntu_t *ubuntu) {
-  delete ubuntu;
+const char *mkgeoip_ubuntu_response_get_probe_ip(
+    mkgeoip_ubuntu_response_t *response) {
+  return (response != nullptr) ? response->probe_ip.c_str() : nullptr;
+}
+
+void mkgeoip_ubuntu_response_delete(mkgeoip_ubuntu_response_t *response) {
+  delete response;
 }
 
 struct mkgeoip_mmdb_s_deleter {
@@ -301,6 +333,14 @@ const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip) {
 }
 
 void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
+
+int64_t mkgeoip_ubuntu_response_movein_body(
+    mkgeoip_ubuntu_response_t *response,
+    std::string &&body) {
+  if (response == nullptr) return false;
+  std::swap(response->body, body);
+  return true;
+}
 
 #endif  // MKGEOIP_INLINE_IMPL
 #endif  // __cplusplus
