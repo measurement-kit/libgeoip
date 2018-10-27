@@ -12,6 +12,7 @@ MkDownloadCatchorgCatch2()
 MkDownloadMeasurementKitMkData()
 MkDownloadMeasurementKitMkCurl()
 MkDownloadMMDBDatabases()
+MkDownloadCABundle()
 
 if("${MSVC}")
   MkDownloadMeasurementKitPrebuiltWindowsCurl()

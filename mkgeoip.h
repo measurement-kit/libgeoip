@@ -4,6 +4,18 @@
 #ifndef MEASUREMENT_KIT_MKGEOIP_H
 #define MEASUREMENT_KIT_MKGEOIP_H
 
+/// @file mkgeoip.h
+///
+/// MkGeoIP implements OONI's IP lookup. It resolves the probe's IP, the
+/// probe's ASN (autonomous system number), the probe's CC (country code),
+/// and the probe's ORG (organization owning the ASN). It uses GeoLite2
+/// databases in MaxMindDB format. When running on mobile, you also need
+/// a CA bundle to perform TLS certificates validation.
+///
+/// This file implements several low-level and high-level APIs. The high
+/// level API consists of configurable lookup settings
+/// (mkgeoip_lookup_settings_t) and results (mkgeoip_lookup_results_t).
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -89,6 +101,71 @@ const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip);
 /// mkgeoip_mmdb_close closes @p mmdb.
 void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb);
 
+/// mkgeoip_lookup_settings_t contains GeoIP lookup settings.
+typedef struct mkgeoip_lookup_settings mkgeoip_lookup_settings_t;
+
+/// mkgeoip_lookup_settings_new creates a new GeoIP lookup settings instance.
+mkgeoip_lookup_settings_t *mkgeoip_lookup_settings_new(void);
+
+/// mkgeoip_lookup_settings_set_ca_bundle_path sets the CA bundle path.
+void mkgeoip_lookup_settings_set_ca_bundle_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *ca_bundle_path);
+
+/// mkgeoip_lookup_settings_set_country_db_path sets the country DB path.
+void mkgeoip_lookup_settings_set_country_db_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *country_db_path);
+
+/// mkgeoip_lookup_settings_set_asn_db_path sets the ASN DB path.
+void mkgeoip_lookup_settings_set_asn_db_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *asn_db_path);
+
+/// mkgeoip_lookup_results_t contains GeoIP lookup results.
+typedef struct mkgeoip_lookup_results mkgeoip_lookup_results_t;
+
+/// mkgeoip_lookup_settings_perform performs a lookup with @p settings. MAY
+/// return NULL in case of serious internal errors.
+mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
+    const mkgeoip_lookup_settings_t *settings);
+
+/// mkgeoip_lookup_settings_delete destroys @p settings.
+void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings);
+
+/// mkgeoip_lookup_results_good returns true if no error occurred during
+/// the GeoIP lookup, and false otherwise. Check the logs in such case.
+int64_t mkgeoip_lookup_results_good(const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_probe_ip returns the probe IP. If the lookup
+/// failed, returns an empty string. MAY return NULL on internal error.
+const char *mkgeoip_lookup_results_get_probe_ip(
+    const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_probe_asn returns the probe ASN. If the lookup
+/// failed, returns the zero ASN, which is reseved.
+int64_t mkgeoip_lookup_results_get_probe_asn(
+    const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_probe_cc returns the probe CC. If the lookup
+/// failed, returns an empty string. MAY return NULL on internal error.
+const char *mkgeoip_lookup_results_get_probe_cc(
+    const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_probe_org returns the probe ORG. If the lookup
+/// failed, returns an empty string. MAY return NULL on internal error.
+const char *mkgeoip_lookup_results_get_probe_org(
+    const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_logs_binary returns the (possibly binary) logs
+/// of the IP lookup. Returns true on success, false on failure.
+int64_t mkgeoip_lookup_results_get_logs_binary(
+    const mkgeoip_lookup_results_t *results,
+    const uint8_t **base, size_t *count);
+
+/// mkgeoip_lookup_results_delete destroys @p results.
+void mkgeoip_lookup_results_delete(mkgeoip_lookup_results_t *results);
+
 #ifdef __cplusplus
 }  // extern "C"
 
@@ -120,6 +197,30 @@ int64_t mkgeoip_ubuntu_response_movein_body(
     mkgeoip_ubuntu_response_t *response,
     std::string &&body);
 
+/// mkgeoip_lookup_settings_deleter is a deleter for mkgeoip_lookup_settings_t.
+struct mkgeoip_lookup_settings_deleter {
+  void operator()(mkgeoip_lookup_settings_t *p) {
+    mkgeoip_lookup_settings_delete(p);
+  }
+};
+
+/// mkgeoip_lookup_settings_uptr is a unique pointer to
+/// mkgeoip_lookup_settings_t.
+using mkgeoip_lookup_settings_uptr = std::unique_ptr<
+    mkgeoip_lookup_settings_t, mkgeoip_lookup_settings_deleter>;
+
+/// mkgeoip_lookup_results_deleter is a deleter for mkgeoip_lookup_results_t.
+struct mkgeoip_lookup_results_deleter {
+  void operator()(mkgeoip_lookup_results_t *p) {
+    mkgeoip_lookup_results_delete(p);
+  }
+};
+
+/// mkgeoip_lookup_results_uptr is a unique pointer to
+/// mkgeoip_lookup_results_t.
+using mkgeoip_lookup_results_uptr = std::unique_ptr<
+    mkgeoip_lookup_results_t, mkgeoip_lookup_results_deleter>;
+
 // By default the implementation is not included. You can force it being
 // included by providing the following definition to the compiler.
 //
@@ -128,12 +229,15 @@ int64_t mkgeoip_ubuntu_response_movein_body(
 
 #include <ctype.h>
 
+#include <chrono>
 #include <functional>
+#include <sstream>
 #include <vector>
 
 #include <maxminddb.h>
 
 #include "mkdata.h"
+#include "mkcurl.h"
 
 const char *mkgeoip_ubuntu_request_get_url() {
   return "https://geoip.ubuntu.com/lookup";
@@ -333,6 +437,181 @@ const char *mkgeoip_mmdb_lookup_org(mkgeoip_mmdb_t *mmdb, const char *ip) {
 }
 
 void mkgeoip_mmdb_close(mkgeoip_mmdb_t *mmdb) { delete mmdb; }
+
+struct mkgeoip_lookup_settings {
+  std::string ca_bundle_path;
+  std::string asn_db_path;
+  std::string country_db_path;
+};
+
+mkgeoip_lookup_settings_t *mkgeoip_lookup_settings_new() {
+  return new mkgeoip_lookup_settings_t;
+}
+
+void mkgeoip_lookup_settings_set_ca_bundle_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *ca_bundle_path) {
+  if (settings != nullptr && ca_bundle_path != nullptr) {
+    settings->ca_bundle_path = ca_bundle_path;
+  }
+}
+
+void mkgeoip_lookup_settings_set_country_db_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *country_db_path) {
+  if (settings != nullptr && country_db_path != nullptr) {
+    settings->country_db_path = country_db_path;
+  }
+}
+
+void mkgeoip_lookup_settings_set_asn_db_path(
+    mkgeoip_lookup_settings_t *settings,
+    const char *asn_db_path) {
+  if (settings != nullptr && asn_db_path != nullptr) {
+    settings->asn_db_path = asn_db_path;
+  }
+}
+
+struct mkgeoip_lookup_results {
+  int64_t good = false;
+  std::string logs;
+  std::string probe_ip;
+  int64_t probe_asn = 0;
+  std::string probe_cc;
+  std::string probe_org;
+};
+
+// mkgeoip_results_log appends @p line to @p logs. It adds information on the
+// current time in millisecond. It also appends a newline to the EOL.
+static void mkgeoip_results_log(std::string *logs, std::string &&line) {
+  if (logs == nullptr) abort();
+  std::stringstream ss;
+  auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now().time_since_epoch());
+  ss << "[" << now.count() << "] " << line << "\n";
+  *logs += ss.str();
+}
+
+mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
+    const mkgeoip_lookup_settings_t *settings) {
+  if (settings == nullptr) return nullptr;
+  mkcurl_request_uptr request{mkcurl_request_new()};
+  if (request == nullptr) return nullptr;
+  mkcurl_request_set_ca_bundle_path(
+      request.get(), settings->ca_bundle_path.c_str());
+  mkcurl_request_set_url(request.get(), mkgeoip_ubuntu_request_get_url());
+  mkcurl_response_uptr response{mkcurl_request_perform(request.get())};
+  if (response == nullptr) return nullptr;
+  mkgeoip_lookup_results_uptr results{new mkgeoip_lookup_results_t};
+  if (results == nullptr) return nullptr;  // should not happen
+  if (!mkcurl_response_moveout_logs(response.get(), &results->logs)) {
+    return nullptr;
+  }
+  mkgeoip_ubuntu_response_uptr ubuntu{mkgeoip_ubuntu_response_new()};
+  if (!ubuntu) return nullptr;
+  mkgeoip_ubuntu_response_set_status_code(
+      ubuntu.get(), mkcurl_response_get_status_code(response.get()));
+  mkgeoip_ubuntu_response_set_content_type(
+      ubuntu.get(), mkcurl_response_get_content_type(response.get()));
+  {
+    std::string body;
+    if (!mkcurl_response_moveout_body(response.get(), &body) ||
+        !mkgeoip_ubuntu_response_movein_body(ubuntu.get(), std::move(body))) {
+      mkgeoip_results_log(&results->logs, "Cannot move response body");
+      return results.release();
+    }
+  }
+  if (!mkgeoip_ubuntu_response_parse(ubuntu.get())) {
+    mkgeoip_results_log(&results->logs, "Cannot parse XML returned by Ubuntu");
+    return results.release();
+  }
+  {
+    const char *s = mkgeoip_ubuntu_response_get_probe_ip(ubuntu.get());
+    if (s == nullptr) {
+      mkgeoip_results_log(&results->logs, "The probe IP is null");
+      return results.release();
+    }
+    results->probe_ip = s;
+  }
+  {
+    mkgeoip_mmdb_uptr db{mkgeoip_mmdb_open(
+        settings->country_db_path.c_str())};
+    if (db == nullptr) {
+      mkgeoip_results_log(&results->logs, "Cannot open country file");
+      return results.release();
+    }
+    const char *s = mkgeoip_mmdb_lookup_cc(db.get(), results->probe_ip.c_str());
+    if (s == nullptr) {
+      mkgeoip_results_log(&results->logs, "Cannot lookup probe CC");
+    } else {
+      results->probe_cc = s;
+    }
+  }
+  {
+    mkgeoip_mmdb_uptr db{mkgeoip_mmdb_open(
+        settings->asn_db_path.c_str())};
+    if (db == nullptr) {
+      mkgeoip_results_log(&results->logs, "Cannot open ASN file");
+      return results.release();
+    }
+    results->probe_asn = mkgeoip_mmdb_lookup_asn(
+        db.get(), results->probe_ip.c_str());
+    if (results->probe_asn == 0) {
+      mkgeoip_results_log(&results->logs, "Cannot lookup probe ASN");
+    }
+    const char *s = mkgeoip_mmdb_lookup_org(
+        db.get(), results->probe_ip.c_str());
+    if (s == nullptr) {
+      mkgeoip_results_log(&results->logs, "Cannot lookup probe ORG");
+    } else {
+      results->probe_org = s;
+    }
+  }
+  results->good = !results->probe_ip.empty() && results->probe_asn != 0  //
+                  && !results->probe_cc.empty() && !results->probe_org.empty();
+  return results.release();
+}
+
+void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings) {
+  delete settings;
+}
+
+int64_t mkgeoip_lookup_results_good(const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->good : false;
+}
+
+const char *mkgeoip_lookup_results_get_probe_ip(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->probe_ip.c_str() : nullptr;
+}
+
+int64_t mkgeoip_lookup_results_get_probe_asn(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->probe_asn : 0;
+}
+
+const char *mkgeoip_lookup_results_get_probe_cc(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->probe_cc.c_str() : nullptr;
+}
+
+const char *mkgeoip_lookup_results_get_probe_org(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->probe_org.c_str() : nullptr;
+}
+
+int64_t mkgeoip_lookup_results_get_logs_binary(
+    const mkgeoip_lookup_results_t *results,
+    const uint8_t **base, size_t *count) {
+  if (results == nullptr || base == nullptr || count == nullptr) return false;
+  *base = (const uint8_t *)results->logs.c_str();
+  *count = results->logs.size();
+  return true;
+}
+
+void mkgeoip_lookup_results_delete(mkgeoip_lookup_results_t *results) {
+  delete results;
+}
 
 int64_t mkgeoip_ubuntu_response_movein_body(
     mkgeoip_ubuntu_response_t *response,
