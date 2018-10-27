@@ -17,6 +17,7 @@
 /ZERO_CHECK.vcxproj.filters
 /argh.h
 /asn.mmdb
+/ca-bundle.pem
 /catch.hpp
 /cmake_install.cmake
 /country.mmdb
