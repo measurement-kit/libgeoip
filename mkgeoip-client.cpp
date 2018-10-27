@@ -39,13 +39,12 @@ int main() {
     if (probe_cc != nullptr) std::clog << "probe_cc: " << probe_cc << std::endl;
   }
   {
-    const uint8_t *base = nullptr;
-    size_t count = 0;
-    if (!mkgeoip_lookup_results_get_logs_binary(results.get(), &base, &count)) {
+    std::string logs;
+    if (!mkgeoip_lookup_results_moveout_logs(results.get(), &logs)) {
       abort();
     }
     std::clog << "=== BEGIN LOGS ===" << std::endl;
-    std::clog << std::string{(const char *)base, count};
+    std::clog << logs;
     std::clog << "=== END LOGS ===" << std::endl;
   }
 }

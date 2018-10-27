@@ -225,6 +225,10 @@ struct mkgeoip_lookup_results_deleter {
 using mkgeoip_lookup_results_uptr = std::unique_ptr<
     mkgeoip_lookup_results_t, mkgeoip_lookup_results_deleter>;
 
+/// mkgeoip_lookup_results_moveout_logs moves logs from @p results into @p logs.
+int64_t mkgeoip_lookup_results_moveout_logs(
+    mkgeoip_lookup_results_t *results, std::string *logs);
+
 // By default the implementation is not included. You can force it being
 // included by providing the following definition to the compiler.
 //
@@ -636,6 +640,13 @@ int64_t mkgeoip_ubuntu_response_movein_body(
     std::string &&body) {
   if (response == nullptr) return false;
   std::swap(response->body, body);
+  return true;
+}
+
+int64_t mkgeoip_lookup_results_moveout_logs(
+    mkgeoip_lookup_results_t *results, std::string *logs) {
+  if (logs == nullptr || results == nullptr) return false;
+  std::swap(results->logs, *logs);
   return true;
 }
 
