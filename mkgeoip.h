@@ -523,6 +523,8 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
   }
   mkgeoip_ubuntu_response_uptr ubuntu{mkgeoip_ubuntu_response_new()};
   if (!ubuntu) return nullptr;
+  mkgeoip_results_log(
+      &results->logs, "Got response from iplookup service; parsing response");
   mkgeoip_ubuntu_response_set_status_code(
       ubuntu.get(), mkcurl_response_get_status_code(response.get()));
   mkgeoip_ubuntu_response_set_content_type(
@@ -547,6 +549,7 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
     }
     results->probe_ip = s;
   }
+  mkgeoip_results_log(&results->logs, "Parsed IP; now using GeoLite2 DBs");
   {
     mkgeoip_mmdb_uptr db{mkgeoip_mmdb_open(
         settings->country_db_path.c_str())};
@@ -583,6 +586,7 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
   }
   results->good = !results->probe_ip.empty() && results->probe_asn != 0  //
                   && !results->probe_cc.empty() && !results->probe_org.empty();
+  mkgeoip_results_log(&results->logs, "GeoIP lookup now complete");
   return results.release();
 }
 
