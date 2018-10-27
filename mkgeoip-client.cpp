@@ -11,6 +11,7 @@
 int main() {
   mkgeoip_lookup_settings_uptr settings{mkgeoip_lookup_settings_new()};
   if (settings == nullptr) abort();
+  mkgeoip_lookup_settings_set_timeout(settings.get(), 7);
   mkgeoip_lookup_settings_set_ca_bundle_path(settings.get(), "ca-bundle.pem");
   mkgeoip_lookup_settings_set_asn_db_path(settings.get(), "asn.mmdb");
   mkgeoip_lookup_settings_set_country_db_path(settings.get(), "country.mmdb");

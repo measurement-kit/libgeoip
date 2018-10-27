@@ -107,6 +107,10 @@ typedef struct mkgeoip_lookup_settings mkgeoip_lookup_settings_t;
 /// mkgeoip_lookup_settings_new creates a new GeoIP lookup settings instance.
 mkgeoip_lookup_settings_t *mkgeoip_lookup_settings_new(void);
 
+void mkgeoip_lookup_settings_set_timeout(
+    mkgeoip_lookup_settings_t *settings,
+    int64_t timeout);
+
 /// mkgeoip_lookup_settings_set_ca_bundle_path sets the CA bundle path.
 void mkgeoip_lookup_settings_set_ca_bundle_path(
     mkgeoip_lookup_settings_t *settings,
@@ -442,10 +446,17 @@ struct mkgeoip_lookup_settings {
   std::string ca_bundle_path;
   std::string asn_db_path;
   std::string country_db_path;
+  int64_t timeout = 0;
 };
 
 mkgeoip_lookup_settings_t *mkgeoip_lookup_settings_new() {
   return new mkgeoip_lookup_settings_t;
+}
+
+void mkgeoip_lookup_settings_set_timeout(
+    mkgeoip_lookup_settings_t *settings,
+    int64_t timeout) {
+  if (settings != nullptr) settings->timeout = timeout;
 }
 
 void mkgeoip_lookup_settings_set_ca_bundle_path(
@@ -497,6 +508,9 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
   if (settings == nullptr) return nullptr;
   mkcurl_request_uptr request{mkcurl_request_new()};
   if (request == nullptr) return nullptr;
+  if (settings->timeout > 0) {
+    mkcurl_request_set_timeout(request.get(), settings->timeout);
+  }
   mkcurl_request_set_ca_bundle_path(
       request.get(), settings->ca_bundle_path.c_str());
   mkcurl_request_set_url(request.get(), mkgeoip_ubuntu_request_get_url());
