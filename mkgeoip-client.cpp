@@ -38,6 +38,12 @@ int main() {
     const char *probe_cc = mkgeoip_lookup_results_get_probe_cc(results.get());
     if (probe_cc != nullptr) std::clog << "probe_cc: " << probe_cc << std::endl;
   }
+  std::clog << "bytes_sent: "
+            << mkgeoip_lookup_results_get_bytes_sent(results.get())
+            << std::endl;
+  std::clog << "bytes_recv: "
+            << mkgeoip_lookup_results_get_bytes_recv(results.get())
+            << std::endl;
   {
     std::string logs;
     if (!mkgeoip_lookup_results_moveout_logs(results.get(), &logs)) {

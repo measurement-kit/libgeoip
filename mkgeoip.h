@@ -141,6 +141,14 @@ void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings);
 /// the GeoIP lookup, and false otherwise. Check the logs in such case.
 int64_t mkgeoip_lookup_results_good(const mkgeoip_lookup_results_t *results);
 
+/// mkgeoip_lookup_results_get_bytes_sent returns the bytes sent.
+double mkgeoip_lookup_results_get_bytes_sent(
+    const mkgeoip_lookup_results_t *results);
+
+/// mkgeoip_lookup_results_get_bytes_recv returns the bytes received.
+double mkgeoip_lookup_results_get_bytes_recv(
+    const mkgeoip_lookup_results_t *results);
+
 /// mkgeoip_lookup_results_get_probe_ip returns the probe IP. If the lookup
 /// failed, returns an empty string. MAY return NULL on internal error.
 const char *mkgeoip_lookup_results_get_probe_ip(
@@ -494,6 +502,8 @@ struct mkgeoip_lookup_results {
   int64_t probe_asn = 0;
   std::string probe_cc;
   std::string probe_org;
+  double bytes_sent = 0.0;
+  double bytes_recv = 0.0;
 };
 
 // mkgeoip_results_log appends @p line to @p logs. It adds information on the
@@ -522,6 +532,8 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
   if (response == nullptr) return nullptr;
   mkgeoip_lookup_results_uptr results{new mkgeoip_lookup_results_t};
   if (results == nullptr) return nullptr;  // should not happen
+  results->bytes_recv = mkcurl_response_get_bytes_recv(response.get());
+  results->bytes_sent = mkcurl_response_get_bytes_sent(response.get());
   if (!mkcurl_response_moveout_logs(response.get(), &results->logs)) {
     return nullptr;
   }
@@ -600,6 +612,16 @@ void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings) {
 
 int64_t mkgeoip_lookup_results_good(const mkgeoip_lookup_results_t *results) {
   return (results != nullptr) ? results->good : false;
+}
+
+double mkgeoip_lookup_results_get_bytes_sent(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->bytes_sent : 0.0;
+}
+
+double mkgeoip_lookup_results_get_bytes_recv(
+    const mkgeoip_lookup_results_t *results) {
+  return (results != nullptr) ? results->bytes_recv : 0.0;
 }
 
 const char *mkgeoip_lookup_results_get_probe_ip(
