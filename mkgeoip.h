@@ -308,10 +308,10 @@ int64_t mkgeoip_ubuntu_response_parse(mkgeoip_ubuntu_response_t *response) {
   }
   std::string body = response->body;
   {
-    mkdata_uptr data{mkdata_new()};
-    mkdata_movein(data.get(), std::move(body));
-    if (!mkdata_contains_valid_utf8(data.get())) return false;
-    body = mkdata_moveout(data.get());
+    mkdata_uptr data{mkdata_new_nonnull()};
+    mkdata_movein_data(data, std::move(body));
+    if (!mkdata_contains_valid_utf8_v2(data.get())) return false;
+    body = mkdata_moveout_data(data);
   }
   {
     static const std::string open_tag = "<Ip>";
