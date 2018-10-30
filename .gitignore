@@ -24,6 +24,7 @@
 /geolite2-asn.tar.gz
 /geolite2-country.tar.gz
 /install_manifest.txt
+/libmkgeoip.a
 /mkcurl.h
 /mkdata.h
 /mkgeoip-client
@@ -31,6 +32,8 @@
 /mkgeoip-client.vcxproj
 /mkgeoip-client.vcxproj.filters
 /mkgeoip.sln
+/mkiplookup.h
+/mkmmdb.h
 /windows-curl-*.tar.gz
 /windows-libmaxminddb-*.tar.gz
 /x64/

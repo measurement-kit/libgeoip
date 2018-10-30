@@ -7,10 +7,10 @@ include(MkUtils)
 # Download dependencies
 # ---------------------
 
-MkDownloadAdishavitArgh()
-MkDownloadCatchorgCatch2()
 MkDownloadMeasurementKitMkData()
 MkDownloadMeasurementKitMkCurl()
+MkDownloadMeasurementKitMkIPLookup()
+MkDownloadMeasurementKitMkMMDB()
 MkDownloadMMDBDatabases()
 MkDownloadCABundle()
 
@@ -51,6 +51,7 @@ MkSetCompilerFlags()
 set(MKGEOIP_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
     ${CURL_INCLUDE_DIRS} ${CMAKE_REQUIRED_INCLUDES})
 
+add_library(mkgeoip mkgeoip.cpp)
 add_executable(mkgeoip-client mkgeoip-client.cpp)
 target_include_directories(mkgeoip-client PUBLIC ${MKGEOIP_INCLUDES})
 list (APPEND MKGEOIP_LIBS ${CURL_LIBRARIES})
@@ -63,7 +64,7 @@ if("${WIN32}" OR "${MINGW}")
   endif()
 endif()
 list(APPEND MKGEOIP_LIBS Threads::Threads)
-target_link_libraries(mkgeoip-client "${MKGEOIP_LIBS}")
+target_link_libraries(mkgeoip-client "${MKGEOIP_LIBS}" mkgeoip)
 
 # Testing
 # -------
