@@ -520,35 +520,30 @@ static void mkgeoip_results_log(std::string *logs, std::string &&line) {
 mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform(
     const mkgeoip_lookup_settings_t *settings) {
   if (settings == nullptr) return nullptr;
-  mkcurl_request_uptr request{mkcurl_request_new()};
-  if (request == nullptr) return nullptr;
+  mkcurl_request_uptr request{mkcurl_request_new_nonnull()};
   if (settings->timeout > 0) {
-    mkcurl_request_set_timeout(request.get(), settings->timeout);
+    mkcurl_request_set_timeout_v2(request.get(), settings->timeout);
   }
-  mkcurl_request_set_ca_bundle_path(
+  mkcurl_request_set_ca_bundle_path_v2(
       request.get(), settings->ca_bundle_path.c_str());
-  mkcurl_request_set_url(request.get(), mkgeoip_ubuntu_request_get_url());
-  mkcurl_response_uptr response{mkcurl_request_perform(request.get())};
-  if (response == nullptr) return nullptr;
+  mkcurl_request_set_url_v2(request.get(), mkgeoip_ubuntu_request_get_url());
+  mkcurl_response_uptr response{mkcurl_request_perform_nonnull(request.get())};
   mkgeoip_lookup_results_uptr results{new mkgeoip_lookup_results_t};
   if (results == nullptr) return nullptr;  // should not happen
-  results->bytes_recv = mkcurl_response_get_bytes_recv(response.get());
-  results->bytes_sent = mkcurl_response_get_bytes_sent(response.get());
-  if (!mkcurl_response_moveout_logs(response.get(), &results->logs)) {
-    return nullptr;
-  }
+  results->bytes_recv = mkcurl_response_get_bytes_recv_v2(response.get());
+  results->bytes_sent = mkcurl_response_get_bytes_sent_v2(response.get());
+  results->logs = mkcurl_response_moveout_logs_v2(response);
   mkgeoip_ubuntu_response_uptr ubuntu{mkgeoip_ubuntu_response_new()};
   if (!ubuntu) return nullptr;
   mkgeoip_results_log(
       &results->logs, "Got response from iplookup service; parsing response");
   mkgeoip_ubuntu_response_set_status_code(
-      ubuntu.get(), mkcurl_response_get_status_code(response.get()));
+      ubuntu.get(), mkcurl_response_get_status_code_v2(response.get()));
   mkgeoip_ubuntu_response_set_content_type(
-      ubuntu.get(), mkcurl_response_get_content_type(response.get()));
+      ubuntu.get(), mkcurl_response_get_content_type_v2(response.get()));
   {
-    std::string body;
-    if (!mkcurl_response_moveout_body(response.get(), &body) ||
-        !mkgeoip_ubuntu_response_movein_body(ubuntu.get(), std::move(body))) {
+    std::string body = mkcurl_response_moveout_body_v2(response);
+    if (!mkgeoip_ubuntu_response_movein_body(ubuntu.get(), std::move(body))) {
       mkgeoip_results_log(&results->logs, "Cannot move response body");
       return results.release();
     }
