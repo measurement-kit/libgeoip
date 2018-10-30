@@ -86,7 +86,7 @@ const char *mkgeoip_lookup_results_get_probe_ip_v2(
     const mkgeoip_lookup_results_t *results);
 
 /// mkgeoip_lookup_results_get_probe_asn_v2 returns the probe ASN. If the lookup
-/// failed, returns the zero ASN, which is reseved. Calls std::abort if it's
+/// failed, returns the zero ASN, which is reserved. Calls std::abort if it's
 /// passed a null @p results.
 int64_t mkgeoip_lookup_results_get_probe_asn_v2(
     const mkgeoip_lookup_results_t *results);
