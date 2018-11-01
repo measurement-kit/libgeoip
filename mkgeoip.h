@@ -35,19 +35,19 @@ void mkgeoip_lookup_settings_set_timeout_v2(
     int64_t timeout);
 
 /// mkgeoip_lookup_settings_set_ca_bundle_path_v2 sets the CA bundle path. It
-/// calls std::abort if passed any null pointer.
+/// calls abort if passed any null pointer.
 void mkgeoip_lookup_settings_set_ca_bundle_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *ca_bundle_path);
 
 /// mkgeoip_lookup_settings_set_country_db_path_v2 sets the country DB path. It
-/// calls std::abort if passed any null pointer.
+/// calls abort if passed any null pointer.
 void mkgeoip_lookup_settings_set_country_db_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *country_db_path);
 
 /// mkgeoip_lookup_settings_set_asn_db_path_v2 sets the ASN DB path. It
-/// calls std::abort if passed any null pointer.
+/// calls abort if passed any null pointer.
 void mkgeoip_lookup_settings_set_asn_db_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *asn_db_path);
@@ -67,26 +67,26 @@ void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings);
 
 /// mkgeoip_lookup_results_good_v2 returns true if no error occurred during
 /// the GeoIP lookup, and false otherwise. Check the logs in such case. It
-/// calls std::abort if passed a null @p results.
+/// calls abort if passed a null @p results.
 int64_t mkgeoip_lookup_results_good_v2(const mkgeoip_lookup_results_t *results);
 
 /// mkgeoip_lookup_results_get_bytes_sent_v2 returns the bytes sent. It
-/// calls std::abort if passed a null pointer.
+/// calls abort if passed a null pointer.
 double mkgeoip_lookup_results_get_bytes_sent_v2(
     const mkgeoip_lookup_results_t *results);
 
 /// mkgeoip_lookup_results_get_bytes_recv_v2 returns the bytes received. It
-/// calls std::abort if passed a null pointer.
+/// calls abort if passed a null pointer.
 double mkgeoip_lookup_results_get_bytes_recv_v2(
     const mkgeoip_lookup_results_t *results);
 
 /// mkgeoip_lookup_results_get_probe_ip_v2 returns the probe IP. If the lookup
-/// failed, returns an empty string. Calls std::abort if @p results is null.
+/// failed, returns an empty string. Calls abort if @p results is null.
 const char *mkgeoip_lookup_results_get_probe_ip_v2(
     const mkgeoip_lookup_results_t *results);
 
 /// mkgeoip_lookup_results_get_probe_asn_v2 returns the probe ASN. If the lookup
-/// failed, returns the zero ASN, which is reserved. Calls std::abort if it's
+/// failed, returns the zero ASN, which is reserved. Calls abort if it's
 /// passed a null @p results.
 int64_t mkgeoip_lookup_results_get_probe_asn_v2(
     const mkgeoip_lookup_results_t *results);
@@ -141,7 +141,7 @@ using mkgeoip_lookup_results_uptr = std::unique_ptr<
     mkgeoip_lookup_results_t, mkgeoip_lookup_results_deleter>;
 
 /// mkgeoip_lookup_results_moveout_logs_v2 moves logs out of @p results. It
-/// will call std::abort if passed a null pointer.
+/// will call abort if passed a null pointer.
 std::string mkgeoip_lookup_results_moveout_logs_v2(
     mkgeoip_lookup_results_t *results);
 
@@ -177,7 +177,7 @@ void mkgeoip_lookup_settings_set_timeout_v2(
     mkgeoip_lookup_settings_t *settings,
     int64_t timeout) {
   if (settings == nullptr) {
-    std::abort();
+    abort();
   }
   settings->timeout = timeout;
 }
@@ -186,7 +186,7 @@ void mkgeoip_lookup_settings_set_ca_bundle_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *ca_bundle_path) {
   if (settings == nullptr || ca_bundle_path == nullptr) {
-    std::abort();
+    abort();
   }
   settings->ca_bundle_path = ca_bundle_path;
 }
@@ -195,7 +195,7 @@ void mkgeoip_lookup_settings_set_country_db_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *country_db_path) {
   if (settings == nullptr || country_db_path == nullptr) {
-    std::abort();
+    abort();
   }
   settings->country_db_path = country_db_path;
 }
@@ -204,7 +204,7 @@ void mkgeoip_lookup_settings_set_asn_db_path_v2(
     mkgeoip_lookup_settings_t *settings,
     const char *asn_db_path) {
   if (settings == nullptr || asn_db_path == nullptr) {
-    std::abort();
+    abort();
   }
   settings->asn_db_path = asn_db_path;
 }
@@ -232,7 +232,7 @@ struct mkgeoip_lookup_results {
 mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform_nonnull(
     const mkgeoip_lookup_settings_t *settings) {
   if (settings == nullptr) {
-    std::abort();
+    abort();
   }
   mkgeoip_lookup_results_uptr results{new mkgeoip_lookup_results_t};
   {
@@ -285,7 +285,7 @@ void mkgeoip_lookup_settings_delete(mkgeoip_lookup_settings_t *settings) {
 int64_t mkgeoip_lookup_results_good_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->good;
 }
@@ -293,7 +293,7 @@ int64_t mkgeoip_lookup_results_good_v2(
 double mkgeoip_lookup_results_get_bytes_sent_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->bytes_sent;
 }
@@ -301,7 +301,7 @@ double mkgeoip_lookup_results_get_bytes_sent_v2(
 double mkgeoip_lookup_results_get_bytes_recv_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->bytes_recv;
 }
@@ -309,7 +309,7 @@ double mkgeoip_lookup_results_get_bytes_recv_v2(
 const char *mkgeoip_lookup_results_get_probe_ip_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->probe_ip.c_str();
 }
@@ -317,7 +317,7 @@ const char *mkgeoip_lookup_results_get_probe_ip_v2(
 int64_t mkgeoip_lookup_results_get_probe_asn_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->probe_asn;
 }
@@ -325,7 +325,7 @@ int64_t mkgeoip_lookup_results_get_probe_asn_v2(
 const char *mkgeoip_lookup_results_get_probe_cc_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->probe_cc.c_str();
 }
@@ -333,7 +333,7 @@ const char *mkgeoip_lookup_results_get_probe_cc_v2(
 const char *mkgeoip_lookup_results_get_probe_org_v2(
     const mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return results->probe_org.c_str();
 }
@@ -342,7 +342,7 @@ void mkgeoip_lookup_results_get_logs_binary_v2(
     const mkgeoip_lookup_results_t *results,
     const uint8_t **base, size_t *count) {
   if (results == nullptr || base == nullptr || count == nullptr) {
-    std::abort();
+    abort();
   }
   *base = (const uint8_t *)results->logs.c_str();
   *count = results->logs.size();
@@ -355,7 +355,7 @@ void mkgeoip_lookup_results_delete(mkgeoip_lookup_results_t *results) {
 std::string mkgeoip_lookup_results_moveout_logs_v2(
     mkgeoip_lookup_results_t *results) {
   if (results == nullptr) {
-    std::abort();
+    abort();
   }
   return std::move(results->logs);
 }
