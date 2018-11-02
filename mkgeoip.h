@@ -251,7 +251,7 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform_nonnull(
     results->probe_ip = mkiplookup_response_get_probe_ip(re.get());
   }
   {
-    mkmmdb_uptr db{mkmmdb_open(settings->country_db_path.c_str())};
+    mkmmdb_uptr db{mkmmdb_open_nonnull(settings->country_db_path.c_str())};
     if (mkmmdb_good(db.get())) {
       results->probe_cc = mkmmdb_lookup_cc(db.get(), results->probe_ip.c_str());
       results->logs += mkmmdb_get_last_lookup_logs(db.get());
@@ -260,7 +260,7 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform_nonnull(
     }
   }
   {
-    mkmmdb_uptr db{mkmmdb_open(settings->asn_db_path.c_str())};
+    mkmmdb_uptr db{mkmmdb_open_nonnull(settings->asn_db_path.c_str())};
     if (mkmmdb_good(db.get())) {
       results->probe_asn = mkmmdb_lookup_asn(
           db.get(), results->probe_ip.c_str());
