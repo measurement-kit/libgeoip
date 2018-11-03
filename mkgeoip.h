@@ -274,7 +274,6 @@ mkgeoip_lookup_results_t *mkgeoip_lookup_settings_perform_nonnull(
   }
   results->good = !results->probe_ip.empty() && results->probe_asn != 0  //
                   && !results->probe_cc.empty() && !results->probe_org.empty();
-  results->logs += "All good.\n";
   return results.release();
 }
 
