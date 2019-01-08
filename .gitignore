@@ -35,6 +35,7 @@
 /mkiplookup.hpp
 /mkmmdb.hpp
 /mkmock.hpp
+/tests
 /windows-curl-*.tar.gz
 /windows-libmaxminddb-*.tar.gz
 /x64/

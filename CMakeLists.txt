@@ -7,6 +7,7 @@ include(MkUtils)
 # Download dependencies
 # ---------------------
 
+MkDownloadCatchorgCatch2()
 MkDownloadMeasurementKitMkData()
 MkDownloadMeasurementKitMkCurl()
 MkDownloadMeasurementKitMkIPLookup()
@@ -72,6 +73,9 @@ target_link_libraries(mkgeoip-client "${MKGEOIP_LIBS}" mkgeoip)
 
 set(BUILD_TESTING "ON" CACHE BOOL "Whether to build tests")
 if(${BUILD_TESTING})
+  add_executable(tests tests.cpp)
+  target_link_libraries(tests "${MKGEOIP_LIBS}")
   enable_testing()
+  add_test(NAME mocked_tests COMMAND tests)
   add_test(NAME basic_test COMMAND mkgeoip-client)
 endif()

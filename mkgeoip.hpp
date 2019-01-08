@@ -93,6 +93,11 @@ LookupResults lookup(const LookupSettings &settings) noexcept;
 namespace mk {
 namespace geoip {
 
+static bool isgood(const LookupResults &results) noexcept {
+  return !results.probe_ip.empty() && !results.probe_asn.empty()  //
+         && !results.probe_cc.empty() && !results.probe_org.empty();
+}
+
 LookupResults lookup(const LookupSettings &settings) noexcept {
   LookupResults results;
   {
@@ -113,6 +118,7 @@ LookupResults lookup(const LookupSettings &settings) noexcept {
   {
     mmdb::Handle db;
     bool ok = db.open(settings.country_db_path, results.logs);
+    MKGEOIP_HOOK(db_open_country, ok);
     if (ok) {
       (void)db.lookup_cc(results.probe_ip, results.probe_cc, results.logs);
     } else {
@@ -122,6 +128,7 @@ LookupResults lookup(const LookupSettings &settings) noexcept {
   {
     mmdb::Handle db;
     bool ok = db.open(settings.asn_db_path, results.logs);
+    MKGEOIP_HOOK(db_open_asn, ok);
     if (ok) {
       (void)db.lookup_asn(results.probe_ip, results.probe_asn, results.logs);
       (void)db.lookup_org(results.probe_ip, results.probe_org, results.logs);
@@ -129,8 +136,7 @@ LookupResults lookup(const LookupSettings &settings) noexcept {
       results.logs.push_back("Cannot open ASN database.");
     }
   }
-  results.good = !results.probe_ip.empty() && !results.probe_asn.empty()  //
-                 && !results.probe_cc.empty() && !results.probe_org.empty();
+  results.good = isgood(results);
   return results;
 }
 
