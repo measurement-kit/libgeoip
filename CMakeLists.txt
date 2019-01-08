@@ -11,6 +11,7 @@ MkDownloadMeasurementKitMkData()
 MkDownloadMeasurementKitMkCurl()
 MkDownloadMeasurementKitMkIPLookup()
 MkDownloadMeasurementKitMkMMDB()
+MkDownloadMeasurementKitMkMock()
 MkDownloadMMDBDatabases()
 MkDownloadCABundle()
 
