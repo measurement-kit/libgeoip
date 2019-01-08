@@ -27,24 +27,24 @@ TEST_CASE("mk::geoip::isgood works") {
   results.probe_cc = "ZZ";
   results.probe_org = "AS0 Organisation";
 
-  SECTION("when only probe_ip is nonempty") {
+  SECTION("when only probe_ip is empty") {
     results.probe_ip = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 
-  SECTION("when only probe_asn is nonempty") {
+  SECTION("when only probe_asn is empty") {
     mk::geoip::LookupResults results;
     results.probe_asn = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 
-  SECTION("when only probe_cc is nonempty") {
+  SECTION("when only probe_cc is empty") {
     mk::geoip::LookupResults results;
     results.probe_cc = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 
-  SECTION("when only probe_org is nonempty") {
+  SECTION("when only probe_org is empty") {
     mk::geoip::LookupResults results;
     results.probe_org = "";
     REQUIRE(!mk::geoip::isgood(results));
