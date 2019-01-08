@@ -33,19 +33,16 @@ TEST_CASE("mk::geoip::isgood works") {
   }
 
   SECTION("when only probe_asn is empty") {
-    mk::geoip::LookupResults results;
     results.probe_asn = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 
   SECTION("when only probe_cc is empty") {
-    mk::geoip::LookupResults results;
     results.probe_cc = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 
   SECTION("when only probe_org is empty") {
-    mk::geoip::LookupResults results;
     results.probe_org = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
