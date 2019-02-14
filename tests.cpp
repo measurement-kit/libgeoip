@@ -23,7 +23,7 @@ MKMOCK_DEFINE_HOOK(db_open_asn, bool);
 TEST_CASE("mk::geoip::isgood works") {
   mk::geoip::LookupResults results;
   results.probe_ip = "1.2.3.4";
-  results.probe_asn = "AS0";
+  results.probe_asn_string = "AS0";
   results.probe_cc = "ZZ";
   results.probe_org = "AS0 Organisation";
 
@@ -32,8 +32,8 @@ TEST_CASE("mk::geoip::isgood works") {
     REQUIRE(!mk::geoip::isgood(results));
   }
 
-  SECTION("when only probe_asn is empty") {
-    results.probe_asn = "";
+  SECTION("when only probe_asn_string is empty") {
+    results.probe_asn_string = "";
     REQUIRE(!mk::geoip::isgood(results));
   }
 

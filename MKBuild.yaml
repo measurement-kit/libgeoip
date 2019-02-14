@@ -1,0 +1,31 @@
+name: mkgeoip
+
+docker: bassosimone/mk-debian
+
+dependencies:
+- github.com/catchorg/catch2
+- github.com/curl/curl
+- github.com/maxmind/libmaxminddb
+- github.com/measurement-kit/generic-assets
+- github.com/measurement-kit/mkdata
+- github.com/measurement-kit/mkcurl
+- github.com/measurement-kit/mkiplookup
+- github.com/measurement-kit/mkmmdb
+- github.com/measurement-kit/mkmock
+
+targets:
+  libraries:
+    mkgeoip:
+      compile: [mkgeoip.cpp]
+  executables:
+    tests:
+      compile: [tests.cpp]
+    mkgeoip-client:
+      compile: [mkgeoip-client.cpp]
+      link: [mkgeoip]
+
+tests:
+  mocked_tests:
+    command: tests
+  basic_test:
+    command: mkgeoip-client

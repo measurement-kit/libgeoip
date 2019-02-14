@@ -46,8 +46,8 @@ struct LookupResults {
   /// probe_ip is the probe IP.
   std::string probe_ip;
 
-  /// probe_asn is the probe ASN.
-  std::string probe_asn;
+  /// probe_asn_string is the probe ASN string. It is a string like `AS1234`.
+  std::string probe_asn_string;
 
   /// probe_cc is the probe country code.
   std::string probe_cc;
@@ -62,7 +62,7 @@ struct LookupResults {
   int64_t bytes_recv = 0;
 };
 
-/// lookup performs a lookup of probe_ip, probe_asn, probe_cc, etc.
+/// lookup performs a lookup of probe_ip, probe_asn_string, probe_cc, etc.
 LookupResults lookup(const LookupSettings &settings) noexcept;
 
 }  // namespace geoip
@@ -94,7 +94,7 @@ namespace mk {
 namespace geoip {
 
 static bool isgood(const LookupResults &results) noexcept {
-  return !results.probe_ip.empty() && !results.probe_asn.empty()  //
+  return !results.probe_ip.empty() && !results.probe_asn_string.empty()  //
          && !results.probe_cc.empty() && !results.probe_org.empty();
 }
 
@@ -130,7 +130,8 @@ LookupResults lookup(const LookupSettings &settings) noexcept {
     bool ok = db.open(settings.asn_db_path, results.logs);
     MKGEOIP_HOOK(db_open_asn, ok);
     if (ok) {
-      (void)db.lookup_asn(results.probe_ip, results.probe_asn, results.logs);
+      (void)db.lookup_asn2(
+          results.probe_ip, results.probe_asn_string, results.logs);
       (void)db.lookup_org(results.probe_ip, results.probe_org, results.logs);
     } else {
       results.logs.push_back("Cannot open ASN database.");
